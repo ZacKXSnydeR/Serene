@@ -1,0 +1,158 @@
+.top-artist-wrapper {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  perspective: 1500px;
+}
+
+.top-artist-glass-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Aligns both text and media to the left */
+  gap: 1.5rem;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  padding: 1.5rem 0;
+  width: fit-content; /* Container wraps tightly to content */
+  max-width: 100%; /* Keeps it left aligned without taking full width if not needed */
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none;
+}
+
+.top-artist-glass-card:hover {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Media Area */
+.top-artist-media {
+  position: relative;
+  width: 500px; /* Accommodates the sliding vinyl up to 490px on hover */
+  height: 240px; /* Matches the new larger sleeve height */
+  display: flex;
+  align-items: center;
+}
+
+/* Landscape Sleeve */
+.top-artist-sleeve {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  width: 300px; /* Larger width, making it a landscape rectangle */
+  height: 240px; /* Height is less than width as requested */
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.top-artist-sleeve img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sleeve-gloss {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* Sliding Vinyl */
+.top-artist-vinyl {
+  position: absolute;
+  left: 20px; /* Tucked behind the sleeve */
+  top: 5px; /* Centered vertically inside the 240px sleeve */
+  z-index: 1;
+  width: 230px; /* Scaled up */
+  height: 230px; /* Scaled up */
+  border-radius: 50%;
+  background: #0f0f0f;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 1), 5px 5px 20px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Smooth roll out and spin transition */
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateX(165px) rotate(0deg); /* Normally half visible */
+}
+
+/* The magic hover effect: Disk slides right and rolls */
+.top-artist-glass-card:hover .top-artist-vinyl {
+  transform: translateX(240px) rotate(180deg); /* Almost fully visible but still overlapping slightly */
+}
+
+/* Vinyl Grooves */
+.vinyl-groove {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.groove-1 { width: 206px; height: 206px; }
+.groove-2 { width: 170px; height: 170px; }
+.groove-3 { width: 134px; height: 134px; border: 1px solid rgba(255, 255, 255, 0.08); }
+
+/* Vinyl Center Label */
+.vinyl-label {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 2;
+  box-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+.vinyl-label img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vinyl-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #000;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Info Side */
+.top-artist-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
+  z-index: 3;
+}
+
+.top-artist-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.top-artist-stats {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  font-weight: 500;
+}

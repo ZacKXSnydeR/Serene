@@ -1,0 +1,90 @@
+.album-page-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 2rem;
+  padding: 2rem 4rem;
+  padding-top: 6rem;
+  position: relative;
+  z-index: 20;
+}
+
+
+.album-track-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.album-track-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.album-track-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.album-track-item.playing {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.album-track-number {
+  width: 3rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.album-track-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.album-track-title {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.album-track-item.playing .album-track-title {
+  color: #F26B50;
+}
+
+.album-track-stats {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.album-track-duration {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  padding-right: 1rem;
+}
+/* removed custom sizing to use exact artist page sizes */
+
+.album-page-info { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 1rem; }
+.album-page-title { font-size: 4rem; font-weight: 900; color: white; line-height: 1.1; margin-bottom: 0.5rem; letter-spacing: -0.05em; }
+.album-page-artist { font-size: 1.5rem; color: rgba(255, 255, 255, 0.8); font-weight: 700; margin-bottom: 0.5rem; }
+.album-page-stats { font-size: 1rem; color: rgba(255, 255, 255, 0.5); font-weight: 500; }
+.album-page-tracks { padding: 0 4rem 4rem 4rem; position: relative; z-index: 20; }
+
+.album-track-item {
+  padding: 0.4rem 1rem !important;
+}
+
+.album-vinyl-card-large .album-vinyl-wrapper {
+  transform: scale(1.4);
+  transform-origin: top left;
+  margin-bottom: 100px;
+  margin-right: 120px;
+}

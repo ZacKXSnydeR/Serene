@@ -1,0 +1,109 @@
+/* Premium Search Bar - Solid Black, Long Width, Orange Icon, Static Elements */
+.searchbar-container {
+  display: flex;
+  align-items: center;
+  width: 280px; /* Proportionally more compact elegant width */
+  height: 42px; /* Sleek compact height, exactly 10px smaller than logo */
+  padding: 0 16px;
+  border-radius: 9999px; /* Perfect pill shape */
+  background: rgba(0, 0, 0, 0.4); /* Premium dim dark glassmorphism */
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  cursor: pointer; /* Change cursor to pointer for clickable button feedback */
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease,
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+  overflow: hidden;
+}
+
+/* Subtle hover state - soft accent border and tiny background lift */
+.searchbar-container:hover {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(242, 107, 80, 0.35);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 0 8px rgba(242, 107, 80, 0.05);
+}
+
+.searchbar-icon {
+  width: 15px; /* Proportionally scaled down for the sleek 42px height */
+  height: 15px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: margin-right 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s ease;
+}
+
+/* Soft, hardware-accelerated icon micro-scaling on hover */
+.searchbar-container:hover .searchbar-icon {
+  transform: scale(1.08);
+}
+
+.searchbar-input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 12px; /* Slightly smaller text for sleek visual harmony */
+  color: rgba(255, 255, 255, 0.85);
+  width: 100%;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+  cursor: text;
+  transition: opacity 0.25s ease, width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+}
+
+.searchbar-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 400;
+}
+
+/* Elegant focus state - subtle glow without complex animations */
+.searchbar-container:focus-within {
+  border-color: rgba(242, 107, 80, 0.45);
+  box-shadow: 0 0 14px rgba(242, 107, 80, 0.15), 0 4px 25px rgba(0, 0, 0, 0.45);
+}
+
+/* Responsive State - Retract into a circle when screen size is small */
+@media (max-width: 1100px) {
+  .searchbar-container {
+    width: 42px; /* Perfect circle since height is 42px */
+    padding: 0;
+    justify-content: center;
+  }
+
+  .searchbar-icon {
+    margin-right: 0;
+  }
+
+  .searchbar-input {
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Smooth expand-on-hover/focus to type even on small screens! */
+  .searchbar-container:hover,
+  .searchbar-container:focus-within {
+    width: 280px;
+    padding: 0 16px;
+    justify-content: flex-start;
+  }
+
+  .searchbar-container:hover .searchbar-icon,
+  .searchbar-container:focus-within .searchbar-icon {
+    margin-right: 10px;
+  }
+
+  .searchbar-container:hover .searchbar-input,
+  .searchbar-container:focus-within .searchbar-input {
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

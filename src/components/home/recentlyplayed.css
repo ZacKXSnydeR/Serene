@@ -1,0 +1,278 @@
+/* Recently Played Component CSS - Skeuomorphic Vinyl Disk & Glassmorphic Cards (Wider Rectangle Box) */
+
+.recently-played-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  margin-top: 12px;
+  margin-bottom: 24px;
+}
+
+.recently-played-section-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+}
+
+.recently-played-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(305px, 1fr));
+  grid-gap: 24px 24px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 12px; /* Prevent clipping when disk shifts left */
+}
+
+/* Card Container */
+.recently-played-card {
+  position: relative;
+  width: 305px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background: transparent;
+  overflow: visible; /* Crucial for disk expansion */
+}
+
+/* Vinyl Disk styling on the left - Bigger Disk (130px) */
+.recently-played-disk {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2c2c2c 0%, #151515 40%, #000000 70%);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.03),
+    inset 0 0 0 12px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 20px rgba(255, 255, 255, 0.02),
+    inset 0 0 0 26px rgba(0, 0, 0, 0.9);
+  z-index: 1;
+  overflow: hidden;
+  transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1); /* Removed transform transition */
+  animation: spin-vinyl 15s linear infinite;
+  animation-play-state: paused; /* Freeze by default */
+}
+
+/* Center poster label on disk */
+.recently-played-disk-poster {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Center spindle hole */
+.recently-played-disk-hole {
+  position: absolute;
+  top: 59px;
+  left: 59px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #070707;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 3;
+}
+
+/* Glassmorphic Rectangle covering the right half of the disk - Wider box (240px x 110px) */
+.recently-played-rectangle {
+  position: absolute;
+  left: 65px;
+  top: 10px;
+  width: 240px;
+  height: 110px;
+  background: rgba(18, 18, 18, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 60px 12px 20px; /* Left padding starts at beginning, right padding clears play button */
+  box-sizing: border-box;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: 
+    background-color 0.3s ease, 
+    border-color 0.3s ease, 
+    box-shadow 0.3s ease,
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Title & Artist Text */
+.recently-played-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 3px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s ease;
+}
+
+.recently-played-artist {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Play Button overlay appearing on hover */
+.recently-played-play-btn {
+  position: absolute;
+  right: 14px;
+  top: calc(50% - 18px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #F26B50;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: scale(0.8) translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  z-index: 4;
+}
+
+.recently-played-play-btn:hover {
+  background-color: #ff7d63;
+  transform: scale(1.08);
+}
+
+/* Active State styling */
+.recently-played-card-active .recently-played-rectangle {
+  border-color: rgba(242, 107, 80, 0.3);
+  background: rgba(242, 107, 80, 0.08);
+}
+
+.recently-played-card-active .recently-played-title {
+  color: #F26B50;
+}
+
+.recently-played-card-active .recently-played-play-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hover States & Micro-animations */
+.recently-played-card:hover .recently-played-disk {
+  left: -12px; /* Shift out left slightly */
+  animation-play-state: running; /* Resume rotation from current position */
+  box-shadow: 
+    -4px 6px 16px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.recently-played-card:hover .recently-played-rectangle {
+  background: rgba(30, 30, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.recently-played-card:hover .recently-played-play-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Infinite vinyl rotation animation */
+@keyframes spin-vinyl {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .recently-played-container {
+    grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+    gap: 16px 20px;
+  }
+  .recently-played-card {
+    width: 275px;
+    height: 110px;
+  }
+  .recently-played-disk {
+    width: 110px;
+    height: 110px;
+  }
+  .recently-played-disk-poster {
+    width: 55px;
+    height: 55px;
+    top: 27.5px;
+    left: 27.5px;
+  }
+  .recently-played-disk-hole {
+    width: 10px;
+    height: 10px;
+    top: 50px;
+    left: 50px;
+  }
+  .recently-played-rectangle {
+    width: 215px;
+    height: 90px;
+    left: 55px;
+    top: 10px;
+    padding-left: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .recently-played-container {
+    grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+    gap: 12px 16px;
+  }
+  .recently-played-card {
+    width: 245px;
+    height: 100px;
+  }
+  .recently-played-disk {
+    width: 100px;
+    height: 100px;
+  }
+  .recently-played-disk-poster {
+    width: 50px;
+    height: 50px;
+    top: 25px;
+    left: 25px;
+  }
+  .recently-played-disk-hole {
+    width: 10px;
+    height: 10px;
+    top: 45px;
+    left: 45px;
+  }
+  .recently-played-rectangle {
+    width: 190px;
+    height: 80px;
+    left: 50px;
+    top: 10px;
+    padding-left: 20px;
+  }
+}

@@ -1,0 +1,233 @@
+/* Track Grid - Apple x Spotify inspired layout with refined typography and interactions */
+.track-grid-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  margin-top: 10px;
+}
+
+.track-grid-section-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 24px 0;
+}
+
+/* Responsive Grid System */
+.track-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Card Base - Transparent background by default, glassmorphic container on hover/active */
+.track-card {
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  contain: content;
+  /* Removed will-change to prevent WebView2 compositor tile fragmentation which breaks Playbar blur */
+}
+
+.track-card:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
+  transform: translate3d(0, -4px, 0);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* Poster wrapper with fixed aspect ratio */
+.track-card-poster-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #080808;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.track-card-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.track-card:hover .track-card-poster-img {
+  transform: scale(1.02);
+}
+
+/* Subtle overlay on hover */
+.track-card-poster-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.track-card:hover .track-card-poster-overlay {
+  opacity: 1;
+}
+
+/* Play Button - Spotify Green style but with Cyrus Orange (#F26B50) */
+.track-card-play-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #F26B50;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  z-index: 10;
+}
+
+.track-card-play-btn:hover {
+  transform: translateY(0) scale(1.08);
+  background-color: #ff7d63;
+}
+
+.track-card:hover .track-card-play-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Active/Playing State - Subtle glass box grouping */
+.track-card-active {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.track-card-active .track-card-title {
+  color: #F26B50;
+}
+
+.track-card-play-btn-active {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Metadata Info */
+.track-card-info {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  padding: 0 2px;
+}
+
+.track-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.track-card-artist {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a7a7a7;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty State */
+.track-grid-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 200px;
+  background-color: #0d0d0d;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Skeleton loader shimmers */
+.track-card-skeleton {
+  pointer-events: none;
+}
+
+.track-card-skeleton-poster {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.track-card-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+  animation: card-shimmer 1.5s infinite;
+}
+
+@keyframes card-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.track-card-skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.track-card-skeleton-text::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+  animation: card-shimmer 1.5s infinite;
+}
+
+.title-skeleton {
+  width: 75%;
+  margin-bottom: 8px;
+}
+
+.artist-skeleton {
+  width: 50%;
+}
+
+/* Responsive adjustments for the grid */
+@media (max-width: 768px) {
+  .track-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-gap: 16px;
+  }
+  .track-card {
+    padding: 10px;
+  }
+}

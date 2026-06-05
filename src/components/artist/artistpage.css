@@ -1,0 +1,197 @@
+/* Bio Expandable Styles */
+.artist-bio-container {
+  position: relative;
+  max-width: 48rem; /* max-w-3xl */
+  cursor: pointer;
+}
+
+.artist-bio-text {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.artist-bio-text.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.artist-bio-more-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(to right, transparent, rgba(10, 10, 10, 0.8) 20%, #0A0A0A);
+  padding-left: 2rem;
+  color: #FFF;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.artist-bio-container:hover .artist-bio-more-btn {
+  opacity: 1;
+}
+
+/* Vinyl Album Cards */
+.album-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 32px;
+  padding: 16px 0;
+}
+
+.album-vinyl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.album-vinyl-wrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 16px;
+  margin-right: 90px; /* Make room for the protruding disk */
+}
+
+/* The Vinyl Disc */
+.album-vinyl-disc {
+  position: absolute;
+  top: 5px;
+  left: 5px; 
+  width: 190px;
+  height: 190px;
+  background: #111;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 5px #222, 
+              inset 0 0 10px 10px #1a1a1a,
+              0 10px 20px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  /* Always sticking out */
+  translate: 90px 0px;
+  transition: translate 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: spinVinyl 4s linear infinite;
+  animation-play-state: paused;
+}
+
+/* Play the animation only on hover */
+.album-vinyl-card:hover .album-vinyl-disc {
+  animation-play-state: running;
+}
+
+.album-vinyl-groove {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.album-vinyl-groove-1 { width: 170px; height: 170px; }
+.album-vinyl-groove-2 { width: 140px; height: 140px; }
+.album-vinyl-groove-3 { width: 110px; height: 110px; }
+
+.album-vinyl-label {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+}
+
+.album-vinyl-label img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-vinyl-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background-color: #111;
+  border-radius: 50%;
+  border: 1px solid #333;
+}
+
+/* The Album Cover / Sleeve */
+.album-vinyl-sleeve {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  z-index: 2;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+}
+
+.album-vinyl-sleeve img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-sleeve-gloss {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* Text Below */
+.album-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFF;
+  text-align: center;
+  margin: 0 0 4px 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+}
+
+.album-card-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  margin: 0;
+}
+
+@keyframes spinVinyl {
+  from { rotate: 0deg; }
+  to { rotate: 360deg; }
+}
+
+/* Playing EQ Animation */
+.eq-bar {
+  width: 3px;
+  background-color: #F26B50;
+  border-radius: 1px;
+  animation: eq-bounce 1s infinite ease-in-out;
+  transform-origin: bottom;
+}
+
+.eq-bar-1 { animation-delay: -0.2s; height: 12px; }
+.eq-bar-2 { animation-delay: -0.5s; height: 16px; }
+.eq-bar-3 { animation-delay: -0.1s; height: 10px; }
+
+@keyframes eq-bounce {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}

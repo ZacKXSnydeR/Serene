@@ -1,0 +1,497 @@
+/* Fullscreen Player — Sleek & Premium Apple Vibe */
+
+.fullscreen-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 90;
+  color: #ffffff;
+  overflow: hidden;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  border-radius: inherit;
+  
+  display: flex;
+  flex-direction: column;
+
+  /* Glassmorphism Vibe — blends with main app diagonal waves */
+  background: rgba(6, 6, 6, 0.16);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  
+  /* Start hidden: scale out slightly, translate down, transparent */
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 20px, 0) scale(0.98);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.fullscreen-player.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* Header */
+.fs-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.fs-close-btn {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.fs-close-btn:hover {
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.fs-close-btn:active {
+  transform: scale(0.92);
+}
+
+.fs-header-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Layout container */
+.fs-container {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 48px 48px 48px;
+  box-sizing: border-box;
+  gap: 80px;
+}
+
+.fs-poster-fade {
+  animation: fs-poster-crossfade 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fs-poster-crossfade {
+  from { opacity: 0; transform: scale(1.06); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Left side: Vinyl Section */
+.fs-vinyl-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fs-vinyl-card {
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65);
+  cursor: default;
+}
+
+/* Vinyl disk */
+.fs-vinyl-disk {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #090909;
+  border: 5px solid #111111;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.04), 0 4px 12px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  animation: fs-vinyl-spin 25s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+/* Realistic vinyl glare reflection */
+.fs-vinyl-disk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 145deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 8%,
+    transparent 16%,
+    transparent 45%,
+    rgba(255, 255, 255, 0.04) 52%,
+    transparent 60%,
+    transparent 90%,
+    transparent 100%
+  );
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Grooves */
+.fs-groove {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  box-sizing: border-box;
+}
+
+.fs-groove-1 { width: 92%; height: 92%; border-color: rgba(255, 255, 255, 0.012); }
+.fs-groove-2 { width: 85%; height: 85%; border-color: rgba(255, 255, 255, 0.022); }
+.fs-groove-3 { width: 78%; height: 78%; border-color: rgba(255, 255, 255, 0.012); }
+.fs-groove-4 { width: 71%; height: 71%; border-color: rgba(255, 255, 255, 0.018); }
+.fs-groove-5 { width: 64%; height: 64%; border-color: rgba(255, 255, 255, 0.012); }
+.fs-groove-6 { width: 57%; height: 57%; border-color: rgba(255, 255, 255, 0.022); }
+
+/* Poster */
+.fs-poster-wrapper {
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 5;
+  border: 3px solid rgba(13, 13, 13, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.fs-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fs-center-hole {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: #000000;
+  border-radius: 50%;
+  z-index: 6;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Spin animation */
+@keyframes fs-vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fs-vinyl-disk.spinning {
+  animation-play-state: running;
+}
+
+/* Right side: Controls Section */
+.fs-controls-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 460px;
+}
+
+/* Metadata */
+.fs-metadata {
+  margin-bottom: 36px;
+}
+
+.fs-track-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  line-height: 1.25;
+  color: #ffffff;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fs-track-artist {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Scrubber */
+.fs-timeline-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.fs-timeline-wrapper {
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.fs-timeline-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.fs-timeline-wrapper:hover .fs-timeline-track {
+  height: 6px;
+}
+
+.fs-timeline-progress {
+  height: 100%;
+  background: #f26b50;
+  border-radius: 99px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+}
+
+.fs-timeline-handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  position: absolute;
+  right: -5px;
+  opacity: 0;
+  transform: scale(0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.fs-timeline-wrapper:hover .fs-timeline-handle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.fs-time-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+  font-feature-settings: "tnum";
+}
+
+/* Audio controls row */
+.fs-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 44px;
+}
+
+.fs-control-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s, transform 0.2s;
+  margin: 0;
+}
+
+.fs-control-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.fs-control-btn:active {
+  transform: scale(0.95);
+}
+
+.fs-play-pause-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #f26b50;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(242, 107, 80, 0.3);
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.fs-play-pause-btn:hover {
+  background-color: #ff7d63;
+}
+
+.fs-play-pause-btn:active {
+  transform: scale(0.96);
+}
+
+.fs-repeat-active {
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.fs-repeat-badge {
+  position: absolute;
+  font-size: 7px;
+  font-weight: 700;
+  color: #ffffff;
+  top: 5px;
+  right: 7px;
+  font-family: system-ui, sans-serif;
+}
+
+/* Volume Slider */
+.fs-volume-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.4);
+  width: 100%;
+}
+
+.fs-volume-slider-wrapper {
+  flex-grow: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.fs-volume-slider-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.fs-volume-slider-wrapper:hover .fs-volume-slider-track {
+  height: 6px;
+}
+
+.fs-volume-slider-progress {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 99px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.fs-volume-slider-handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  position: absolute;
+  right: -5px;
+  opacity: 0;
+  transform: scale(0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.fs-volume-slider-wrapper:hover .fs-volume-slider-handle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.fs-volume-slider-wrapper:hover .fs-volume-slider-progress {
+  background: #f26b50;
+}
+
+/* Fullscreen Media Queries for responsive size adjustments */
+@media (max-width: 960px) {
+  .fs-container {
+    flex-direction: column;
+    gap: 36px;
+    padding: 0 32px 32px 32px;
+  }
+  
+  .fs-vinyl-card {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .fs-poster-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .fs-controls-section {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .fs-track-title {
+    font-size: 26px;
+  }
+  
+  .fs-track-artist {
+    font-size: 16px;
+  }
+}
+
+/* Global utility to disable animations/transitions instantly on exit */
+.no-transitions * {
+  transition: none !important;
+  animation: none !important;
+}

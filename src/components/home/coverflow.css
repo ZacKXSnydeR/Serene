@@ -1,0 +1,185 @@
+/* Premium Matte-Black & Cyrus Orange 3D Coverflow Styles */
+
+.coverflow-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 40px;
+  padding: 0; /* Let parent control side paddings for side-by-side */
+  box-sizing: border-box;
+}
+
+.coverflow-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+  opacity: 0.85;
+}
+
+.coverflow-container {
+  position: relative;
+  width: 100%;
+  height: 310px; /* Slightly taller for larger cards */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1200px;
+  overflow: visible;
+  user-select: none;
+  touch-action: pan-y; /* Allow vertical browser scroll but intercept horizontal swipe */
+}
+
+.coverflow-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-style: preserve-3d;
+}
+
+.coverflow-card {
+  position: absolute;
+  width: 200px; /* Enlarged width */
+  height: 270px; /* Enlarged height */
+  background: rgba(13, 13, 13, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              z-index 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              background-color 0.3s ease;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+  contain: content;
+}
+
+.coverflow-card:hover {
+  border-color: rgba(242, 107, 80, 0.35); /* Cyrus Orange highlight */
+  background: rgba(22, 22, 22, 0.95);
+}
+
+/* Image Wrapper (larger & circular support) */
+.coverflow-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.45);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  background-color: #121212;
+}
+
+.coverflow-card-artists .coverflow-image-wrapper {
+  border-radius: 50%; /* Circle for artist profiles */
+}
+
+.coverflow-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-drag: none; /* Block browser image dragging */
+  -webkit-user-drag: none;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coverflow-card:hover .coverflow-image {
+  transform: scale(1.03);
+}
+
+/* Play Button Overlay (Cyrus Orange themed) */
+.coverflow-play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 5;
+}
+
+.coverflow-card:hover .coverflow-play-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.coverflow-play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #F26B50; /* Cyrus Orange */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  transform: scale(0.9);
+  color: #000000;
+}
+
+.coverflow-play-btn:hover {
+  background-color: #FF7D63;
+  transform: scale(1.04);
+}
+
+.coverflow-play-btn:active {
+  transform: scale(0.92);
+}
+
+/* Metadata formatting */
+.coverflow-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.coverflow-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  letter-spacing: -0.01em;
+}
+
+.coverflow-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}

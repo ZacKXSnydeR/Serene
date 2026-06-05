@@ -1,0 +1,184 @@
+/* Modular Sidebar styles for Serene - Compact Dock Design */
+
+.sidebar-container {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  z-index: 50;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.4); /* Premium dim dark glassmorphism */
+  backdrop-filter: blur(30px) saturate(120%);
+  -webkit-backdrop-filter: blur(30px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* Align logo (top), navigation (middle), profile (bottom) */
+  padding: 16px 8px; /* Enhanced vertical padding for better spacing */
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  will-change: transform, opacity;
+  contain: content;
+}
+
+.sidebar-open {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.sidebar-closed {
+  transform: translate3d(-110px, 0, 0); /* Tighter retract distance for 80px width */
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Logo container matches the background logo's exact position */
+.sidebar-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px; /* Matches h-13 (52px) */
+  margin-top: 8px; /* Aligns with absolute top-2 offset (top-4 of sidebar + top-2 = top-6 of background!) */
+  user-select: none;
+}
+
+.sidebar-logo-img {
+  height: 52px; /* Matches h-13 (52px) */
+  width: auto;
+  object-fit: contain;
+}
+
+/* Navigation container centered vertically in the middle of the dock */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Center nav items vertically */
+  gap: 16px; /* Spacious elegant gap */
+  width: 100%;
+  flex: 1; /* Stretch to fill middle section */
+}
+
+.sidebar-nav-item {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+  border: none;
+  background: transparent;
+}
+
+/* Premium active state: transparent background, standard color highlight */
+.sidebar-nav-item-active {
+  background-color: transparent;
+  color: #F26B50;
+}
+
+.sidebar-nav-item-inactive {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sidebar-nav-item-inactive:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-nav-item:hover .sidebar-icon {
+  transform: scale(1.08);
+}
+
+.sidebar-icon-active {
+  color: #F26B50;
+}
+
+.sidebar-icon-inactive {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sidebar-nav-item:hover .sidebar-icon-inactive {
+  color: #ffffff;
+}
+
+/* Profile button container at the bottom */
+.sidebar-profile-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto; /* Push strictly to bottom */
+  padding-top: 16px;
+  border-top: 1px solid rgba(34, 34, 34, 0.8);
+  margin-bottom: 8px;
+}
+
+.sidebar-profile-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background-color: #161616;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.sidebar-profile-btn:hover .sidebar-profile-avatar {
+  border-color: #F26B50;
+  color: #F26B50;
+  transform: scale(1.06);
+  box-shadow: 0 0 12px rgba(242, 107, 80, 0.15);
+}
+
+/* Sidebar Pin Button styling */
+.sidebar-pin-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 8px;
+  margin-bottom: 4px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-pin-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-pin-btn-active {
+  color: #F26B50 !important;
+  background-color: transparent !important;
+}

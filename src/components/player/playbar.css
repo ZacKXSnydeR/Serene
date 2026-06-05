@@ -1,0 +1,470 @@
+/* Premium Layered Diagonal Playbar — Cyrus Orange & Black Shades, Apple-Grade Depth */
+
+.playbar-container {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translate3d(-50%, 140px, 0);
+  opacity: 0;
+  pointer-events: none;
+  width: 720px;
+  height: 88px;
+  background: #060606;
+  border: none;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  box-sizing: border-box;
+  box-shadow: 
+    /* Tight contact shadow — anchors it to the surface */
+    0 2px 6px rgba(0, 0, 0, 0.7),
+    /* Mid-range depth lift */
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    /* Wide atmospheric shadow */
+    0 24px 56px rgba(0, 0, 0, 0.45),
+    /* Warm orange bloom from below — matches the design theme */
+    0 16px 48px rgba(158, 51, 24, 0.18),
+    /* Top specular line — gives the capsule a lit-from-above feeling */
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  z-index: 45;
+  isolation: isolate;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, width 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  overflow: hidden;
+}
+
+/* Slide up and fade in when a song is playing */
+.playbar-container.playbar-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(-50%, 0, 0);
+}
+
+/* Organic softly-blended light layers — Apple wallpaper style, no visible edges */
+.playbar-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  background:
+    /* Floating warm glow pocket — off-center, bleeds into dark */
+    radial-gradient(
+      ellipse 55% 120% at 78% 60%,
+      rgba(158, 51, 24, 0.55) 0%,
+      rgba(90, 29, 10, 0.30) 35%,
+      transparent 70%
+    ),
+    /* Secondary orange shimmer — higher, slightly left */
+    radial-gradient(
+      ellipse 40% 90% at 92% 20%,
+      rgba(242, 107, 80, 0.22) 0%,
+      rgba(168, 49, 27, 0.12) 45%,
+      transparent 75%
+    ),
+    /* Deep brown warmth bleeding from right-center */
+    radial-gradient(
+      ellipse 70% 80% at 65% 80%,
+      rgba(61, 15, 9, 0.65) 0%,
+      rgba(30, 10, 6, 0.30) 50%,
+      transparent 80%
+    ),
+    /* Main diagonal light sweep — uneven, asymmetric */
+    linear-gradient(
+      118deg,
+      #060606 0%,
+      #0c0c0c 18%,
+      #141210 31%,
+      #1e1610 42%,
+      #2a1a0c 53%,
+      #3a1a0a 63%,
+      #4e1e0a 73%,
+      #6a2410 83%,
+      #8a2e14 92%,
+      #a03820 100%
+    ),
+    /* Subtle dark vignette anchoring the left side */
+    linear-gradient(
+      90deg,
+      rgba(4, 4, 4, 0.9) 0%,
+      rgba(4, 4, 4, 0.4) 30%,
+      transparent 60%
+    );
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Specular top-edge highlight — gives the capsule 3D curvature like polished glass */
+.playbar-container::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.06) 80%,
+    transparent 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Shift left when NowPlayingSidebar open */
+.playbar-shifted.playbar-visible {
+  transform: translate3d(calc(-50% - 150px), 0, 0);
+  max-width: calc(100vw - 580px);
+}
+
+.playbar-container:hover {
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.75),
+    0 10px 32px rgba(0, 0, 0, 0.6),
+    0 28px 64px rgba(0, 0, 0, 0.5),
+    0 20px 56px rgba(158, 51, 24, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* 1. Track Info (Left) */
+.playbar-left {
+  display: flex;
+  align-items: center;
+  width: 28%;
+  min-width: 170px;
+  gap: 14px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-left: 24px;
+  box-sizing: border-box;
+}
+
+.playbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 28%;
+  gap: 12px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+
+.playbar-track-cover-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%; /* Reverted to perfect circle */
+  overflow: hidden;
+  background-color: #121212;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.playbar-container:hover .playbar-track-cover-wrapper {
+  transform: scale(1.02);
+}
+
+.playbar-track-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playbar-track-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: 12px;
+  overflow: hidden;
+  max-width: 110px;
+}
+
+.playbar-track-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.playbar-track-artist {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.005em;
+}
+
+.playbar-like-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  margin-left: 12px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.playbar-like-btn:hover {
+  color: #F26B50; /* Cyrus Orange */
+  transform: scale(1.08);
+}
+
+.playbar-like-btn-active {
+  color: #F26B50;
+}
+
+.playbar-no-track {
+  display: flex;
+  align-items: center;
+}
+
+/* 2. Controls & Scrubber (Center) */
+.playbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.playbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Elegant, evenly balanced gap */
+  margin-bottom: 6px;
+}
+
+.playbar-control-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  width: 42px; /* Identical height/width as play/pause to guarantee perfect vertical center alignment */
+  height: 42px;
+  border-radius: 50%;
+  margin: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.playbar-control-btn:hover {
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.05); /* Clean Apple-style circular hover bg */
+}
+
+.playbar-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Apple-grade Cyrus Orange Play/Pause Button - Matches Sidebar perfectly */
+.playbar-play-pause-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #F26B50; /* Signature Cyrus Orange */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.2s ease;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  transform: translateY(-2px); /* Visual vertical centering correction */
+}
+
+.playbar-play-pause-btn:hover {
+  background-color: #FF7D63; /* Static color change only */
+}
+
+.playbar-play-pause-btn:active {
+  transform: translateY(-2px) scale(0.95);
+}
+
+/* Precise Timeline Scrubber */
+.playbar-timeline {
+  display: flex;
+  align-items: center;
+  width: 260px; /* Constrained compact width prevents clashing with side sections */
+  gap: 10px;
+}
+
+.playbar-time {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3);
+  min-width: 28px;
+  text-align: center;
+  font-feature-settings: "tnum"; /* Monospaced numbers prevent layout shifting */
+}
+
+.playbar-scrubber-wrapper {
+  flex-grow: 1;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.playbar-scrubber-track {
+  width: 100%;
+  height: 5px; /* Thicker track for easier mouse dragging */
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.playbar-scrubber-wrapper:hover .playbar-scrubber-track {
+  height: 6px;
+}
+
+.playbar-scrubber-progress {
+  height: 100%;
+  background-color: #F26B50; /* Cyrus Orange seeker */
+  border-radius: 99px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+}
+
+.playbar-scrubber-handle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  position: absolute;
+  right: -4px;
+  opacity: 0;
+  transform: scale(0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.playbar-scrubber-wrapper:hover .playbar-scrubber-handle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+
+.playbar-utility-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.playbar-utility-btn:hover {
+  color: #FFFFFF;
+  transform: scale(1.05);
+}
+
+/* Premium Visual Divider */
+.playbar-divider {
+  width: 1px;
+  height: 14px;
+  background-color: rgba(255, 255, 255, 0.12);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Volume Slider */
+.playbar-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.playbar-volume-slider-wrapper {
+  width: 72px; /* Breathing volume slider width */
+  height: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.playbar-volume-slider-track {
+  width: 100%;
+  height: 5px; /* Thicker track for easier mouse dragging */
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.playbar-volume-slider-wrapper:hover .playbar-volume-slider-track {
+  height: 6px;
+}
+
+.playbar-volume-slider-progress {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 99px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.25s ease;
+}
+
+.playbar-volume-slider-handle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  position: absolute;
+  right: -4px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.playbar-volume-slider-wrapper:hover .playbar-volume-slider-handle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.playbar-volume-slider-wrapper:hover .playbar-volume-slider-progress {
+  background-color: #F26B50; /* Custom Orange highlight when active/hovered */
+}
+
+.playbar-repeat-active {
+  color: #F26B50 !important;
+}
+
+
+.playbar-shuffle-active {
+  color: #F26B50 !important;
+}

@@ -1,0 +1,245 @@
+/* Home Section Styles */
+.home-section {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.home-section-title {
+  color: #fff;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+  padding-left: 32px;
+}
+
+/* Scrollbar hiding for carousels */
+.home-carousel-wrapper::-webkit-scrollbar,
+.home-list-grid-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.home-carousel-wrapper,
+.home-list-grid-wrapper {
+  width: 100%;
+  padding: 16px 32px 32px 32px; /* Add padding top to accommodate translate-y */
+  box-sizing: border-box;
+}
+
+/* List Grid (Quick Picks) */
+.home-list-grid {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+}
+
+.home-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.home-list-item {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.home-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
+  transform: translate3d(0, -4px, 0);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.home-list-item-thumb-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.home-list-item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-list-item-play-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.home-list-item:hover .home-list-item-play-overlay {
+  opacity: 1;
+}
+
+.home-list-item-play-overlay svg {
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  margin-left: 2px;
+}
+
+.home-list-item-info {
+  margin-left: 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.home-list-item-title {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.home-list-item-desc {
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Carousel Styles */
+.home-carousel {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+}
+
+.home-carousel-card {
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.home-carousel-card:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
+  transform: translate3d(0, -4px, 0);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.home-carousel-card:hover .home-carousel-play-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.square-card {
+  width: 100%;
+}
+
+.wide-card {
+  width: 100%;
+}
+
+.home-carousel-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  margin-bottom: 16px;
+  background-color: #080808;
+}
+
+.square-card .home-carousel-thumb-wrapper {
+  aspect-ratio: 1 / 1;
+}
+
+.wide-card .home-carousel-thumb-wrapper {
+  aspect-ratio: 16 / 9;
+}
+
+.home-carousel-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-carousel-play-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  background-color: #F26B50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.home-carousel-card:hover .home-carousel-play-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.home-carousel-play-overlay:hover {
+  background-color: #ff7d63;
+  transform: translateY(0) scale(1.08) !important;
+}
+
+.home-carousel-play-overlay svg {
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  margin-left: 2px;
+}
+
+.home-carousel-info {
+  padding: 0 4px;
+}
+
+.home-carousel-title {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.home-carousel-desc {
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

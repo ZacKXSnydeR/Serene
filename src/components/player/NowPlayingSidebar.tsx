@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { searchYouTube, fetchArtistDetails } from "../../services/youtube/youtubeSearch";
+import { getPosterUrl } from "../../utils/imageUtils";
+
 import "./nowplayingsidebar.css";
 
 interface NowPlayingSidebarProps {
@@ -57,78 +58,51 @@ export function NowPlayingSidebar({
     setArtistDetails(null);
     setArtistStats("");
 
-    if (track.artistId) {
-      fetchArtistDetails(track.artistId)
-        .then(details => {
-          if (!isMounted) return;
-          if (details) {
-            setArtistStats(details.views || "");
-            setArtistDetails({...details, id: track.artistId, browse_id: track.artistId});
+    const loadArtistDetails = async () => {
+      if (track.artistId) {
+        try {
+          const res = await fetch(`http://127.0.0.1:5050/artist/${track.artistId}`);
+          if (!res.ok) throw new Error("Failed to fetch artist details");
+          const data = await res.json();
+          if (isMounted) {
+            setArtistDetails({
+              id: track.artistId,
+              name: data.name || track.artist,
+              description: data.description || "",
+              image: getPosterUrl(data)
+            });
+            setArtistStats(data.views || data.subscribers || "");
             
-            const songsToUse = details.top_songs?.length ? details.top_songs : (details.singles?.length ? details.singles : details.albums || []);
-            const topTracks = songsToUse.filter((r: any) => r.id !== track.id).slice(0, 3).map((r: any) => ({
-              id: r.id,
-              title: r.title,
-              artist: r.uploader || details.name || track.artist,
-              artistId: track.artistId,
-              poster: r.thumbnail,
-              source: 'youtube',
-              durationSeconds: r.duration,
-              views: r.views || "Popular",
-              fullYtUrl: `https://youtube.com/watch?v=${r.id}`
-            }));
-            setPopularFetchedTracks(topTracks);
-          }
-          setIsLoadingPopular(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch artist details directly:", err);
-          if (isMounted) setIsLoadingPopular(false);
-        });
-    } else {
-      searchYouTube(track.artist)
-        .then(res => {
-          if (!isMounted) return;
-          
-          // Find artist for details
-          const artistResult = res.find(r => r.result_type === 'artist');
-          if (artistResult) {
-            setArtistStats(artistResult.views || "");
-            if (artistResult.browse_id) {
-              fetchArtistDetails(artistResult.browse_id).then(details => {
-                if (isMounted && details) {
-                  const finalImage = details.image || artistResult.thumbnail;
-                  setArtistDetails({...details, image: finalImage, browse_id: artistResult.browse_id, id: artistResult.id});
-                }
-              }).catch(console.error);
-            } else {
-              setArtistDetails({ name: artistResult.title, image: artistResult.thumbnail, description: "", browse_id: artistResult.browse_id, id: artistResult.id });
+            if (data.songs?.results) {
+              const mappedPopular = data.songs.results.slice(0, 3).map((item: any) => ({
+                id: item.videoId || item.id || item.browseId,
+                title: item.title,
+                artist: item.artists?.[0]?.name || data.name,
+                poster: getPosterUrl(item),
+                views: item.views || "",
+                source: "youtube"
+              }));
+              setPopularFetchedTracks(mappedPopular);
             }
           }
-
-          // Filter out current track and take top 3 songs
-          const topTracks = res.filter(r => r.result_type === 'song' && r.id !== track.id).slice(0, 3).map(r => ({
-            id: r.id,
-            title: r.title,
-            artist: r.uploader || track.artist,
-            artistId: r.uploader_id,
-            poster: r.thumbnail,
-            source: 'youtube',
-            durationSeconds: r.duration,
-            views: r.views || "Popular",
-            fullYtUrl: `https://youtube.com/watch?v=${r.id}`
-          }));
-          setPopularFetchedTracks(topTracks);
-          setIsLoadingPopular(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch search results:", err);
+        } catch (err) {
+          console.error("Failed to load artist details for sidebar:", err);
+        } finally {
           if (isMounted) setIsLoadingPopular(false);
-        });
-    }
+        }
+      } else {
+        // Simulate loading for UI consistency if no artistId
+        setTimeout(() => {
+          if (!isMounted) return;
+          setIsLoadingPopular(false);
+        }, 500);
+      }
+    };
+
+    loadArtistDetails();
 
     return () => { isMounted = false; };
-  }, [track?.artist]);
+  }, [track?.artist, track?.artistId]);
 
   if (!track) return null;
 
@@ -428,7 +402,7 @@ export function NowPlayingSidebar({
           >
             <div className="nowplaying-artist-left">
               <div className="nowplaying-artist-avatar">
-                 <img src={artistDetails.image?.replace(/=w\d+-h\d+/g, "=w500-h500").replace("hqdefault", "maxresdefault")} alt={artistDetails.name} />
+                 <img src={artistDetails.image} alt={artistDetails.name} />
               </div>
               <p className="nowplaying-artist-name">{artistDetails.name}</p>
             </div>

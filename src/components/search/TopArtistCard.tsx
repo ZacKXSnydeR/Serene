@@ -30,16 +30,14 @@ const TopArtistCard: React.FC<TopArtistCardProps> = ({ artist, onClick }) => {
             <div className="vinyl-groove groove-2"></div>
             <div className="vinyl-groove groove-3"></div>
             <div className="vinyl-label">
-              {/* Improve quality of label by replacing size params */}
-              <img src={artist.image.replace(/=w\d+-h\d+/g, "=w500-h500")} alt="vinyl label" />
+              <img src={artist.image} alt="vinyl label" />
               <div className="vinyl-hole"></div>
             </div>
           </div>
           
           {/* Record Sleeve (Landscape Rectangle) */}
           <div className="top-artist-sleeve">
-            {/* Improve poster quality */}
-            <img src={artist.image.replace(/=w\d+-h\d+/g, "=w1000-h1000").replace("hqdefault", "maxresdefault")} alt={artist.title} />
+            <img src={artist.image} alt={artist.title} />
             {/* Glossy overlay on the sleeve */}
             <div className="sleeve-gloss"></div>
           </div>

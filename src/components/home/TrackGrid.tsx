@@ -1,4 +1,7 @@
+import { useState } from "react";
 import "./trackgrid.css";
+import { AddToPlaylistModal } from "../library/AddToPlaylistModal";
+import { getPosterUrl, getHighResImage } from "../../utils/imageUtils";
 
 interface TrackGridProps {
   tracks: any[];
@@ -12,6 +15,7 @@ interface TrackGridProps {
 
 export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, isLoading, title, onArtistClick }: TrackGridProps) {
   const sectionTitle = title || "Today's Hits";
+  const [addingToPlaylistVideoId, setAddingToPlaylistVideoId] = useState<string | null>(null);
 
   // If loading, render the pulsing dark shimmer skeletons!
   if (isLoading) {
@@ -68,7 +72,7 @@ export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, is
             >
               {/* Poster cover art */}
               <div className="track-card-poster-wrapper">
-                <img src={track.poster} alt={track.title} className="track-card-poster-img" />
+                <img src={getPosterUrl(track) || getHighResImage(track.poster)} alt={track.title} className="track-card-poster-img" />
                 <div className="track-card-poster-overlay" />
                 
                 {/* Floating play button revealing strictly on hover */}
@@ -89,6 +93,20 @@ export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, is
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   )}
+                </button>
+
+                {/* Add to Playlist button */}
+                <button 
+                  className="track-card-add-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAddingToPlaylistVideoId(track.id || track.videoId);
+                  }}
+                  title="Add to Playlist"
+                >
+                  <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
                 </button>
               </div>
 
@@ -112,6 +130,12 @@ export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, is
           );
         })}
       </div>
+
+      <AddToPlaylistModal 
+        isOpen={addingToPlaylistVideoId !== null}
+        onClose={() => setAddingToPlaylistVideoId(null)}
+        videoId={addingToPlaylistVideoId}
+      />
     </div>
   );
 }

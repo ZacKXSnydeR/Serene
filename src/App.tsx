@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
-import { invoke } from "@tauri-apps/api/core";
+
 import { Sidebar } from "./components/layout/Sidebar";
 import { SearchBar } from "./components/layout/SearchBar";
 import { TrackGrid } from "./components/home/TrackGrid";
@@ -11,18 +11,23 @@ import { Playbar } from "./components/player/Playbar";
 import { NowPlayingSidebar } from "./components/player/NowPlayingSidebar";
 import { Coverflow } from "./components/home/Coverflow";
 import { PlayerFullscreen } from "./components/player/PlayerFullscreen";
-import { searchYouTube, extractAudioUrl } from "./services/youtube";
+
 import ArtistPage from "./components/artist/ArtistPage";
 import AlbumPage from "./components/album/AlbumPage";
 import TopArtistCard from "./components/search/TopArtistCard";
+import { ProfilePage } from "./components/profile/ProfilePage";
+import { getPosterUrl } from "./utils/imageUtils";
+import { LikedSongsView } from "./components/library/LikedSongsView";
+import { HistoryView } from "./components/library/HistoryView";
+import { PlaylistsView } from "./components/library/PlaylistsView";
+import { HomeSection } from "./components/home/HomeSection";
 
 const appWindow = getCurrentWindow();
 
 export default function App() {
-  // Sidebar states
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarPinned, setIsSidebarPinned] = useState(true);
-  const [activeNav, setActiveNav] = useState("home");
+  const [isSidebarPinned, setIsSidebarPinned] = useState(false);
+  const [activeView, setActiveView] = useState<"home" | "search" | "artist" | "album" | "profile" | "liked" | "history" | "playlists" | "library">("home");
   const [isHoveringTop, setIsHoveringTop] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -31,23 +36,24 @@ export default function App() {
   
   // Custom Page states
   const [activeArtistId, setActiveArtistId] = useState<string | null>(null);
-  const [activeAlbumData, setActiveAlbumData] = useState<{ id: string, title: string, artist: string, thumbnail: string } | null>(null);
+  const [activeAlbumData, setActiveAlbumData] = useState<{ id: string, title: string, artist: string, thumbnail: string, type?: "album" | "playlist" } | null>(null);
 
   // Deezer global chart data states
   const [topArtists, setTopArtists] = useState<any[]>([]);
   const [topPlaylists, setTopPlaylists] = useState<any[]>([]);
 
   // Session cache states for homepage
-  const [defaultTracks, setDefaultTracks] = useState<any[]>([]);
   const [defaultArtists, setDefaultArtists] = useState<any[]>([]);
   const [defaultPlaylists, setDefaultPlaylists] = useState<any[]>([]);
+  const [homeSections, setHomeSections] = useState<any[]>([]);
   
 
   // Dynamic Music Playback & Search States
   const [searchQuery, setSearchQuery] = useState("");
   const [tracks, setTracks] = useState<any[]>([]);
+  const [youtubeTracks, setYoutubeTracks] = useState<any[]>([]);
   const [searchArtists, setSearchArtists] = useState<any[]>([]);
-  const [searchPlaylists, setSearchPlaylists] = useState<any[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -65,99 +71,79 @@ export default function App() {
   const currentTimeRef = useRef(0);
   const recentlyPlayedRef = useRef<any[]>([]);
 
-  // Helper to identify if an image/poster URL is a default placeholder
-  const isPlaceholderImage = (url: string | null | undefined): boolean => {
-    if (!url) return true;
-    const lowerUrl = url.toLowerCase();
-    const placeholderSignatures = [
-      "d41d8cd98f00b204e9800998ecf8427e", // Empty string MD5 placeholder hash on Deezer
-      "24de8c7fa822f99f94681c3e029a25f4", // Fahmida Nabi's default avatar (silhouette) placeholder
-      "placeholder",
-      "empty",
-      "artist//",
-      "album//",
-      "playlist//",
-      "cover//"
-    ];
-    // "default" is too broad, it blocks YouTube's sddefault.jpg, hqdefault.jpg, etc.
-    return placeholderSignatures.some(sig => lowerUrl.includes(sig));
-  };
 
-  // Search track handler (dual sourcing from iTunes Search API and YouTube)
-  const searchTracks = async (term: string, isDefault = false) => {
-    if (!term.trim()) return;
+
+  const handleSearch = async (forcedQuery?: string) => {
+    const q = forcedQuery || searchQuery;
+    if (!q.trim()) return;
+    setIsSearchActive(true);
     setIsLoading(true);
-    setIsSearchActive(!isDefault);
     try {
-      const [itunesRes, ytRes] = await Promise.allSettled([
-        fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=12`).then(res => res.json()),
-        searchYouTube(term)
+      const [res, resVideos] = await Promise.all([
+        fetch(`http://127.0.0.1:5050/search?query=${encodeURIComponent(q)}`),
+        fetch(`http://127.0.0.1:5050/youtube/search?query=${encodeURIComponent(q)}`)
       ]);
-
+      if (!res.ok || !resVideos.ok) throw new Error("Search failed");
+      const data = await res.json();
+      const videoData = await resVideos.json();
+      
       const mappedTracks: any[] = [];
+      const mappedYoutube: any[] = [];
       const mappedArtists: any[] = [];
-      const mappedPlaylists: any[] = [];
 
-      // Process YouTube results
-      if (ytRes.status === 'fulfilled' && ytRes.value) {
-        ytRes.value.forEach((item) => {
-          if (!isPlaceholderImage(item.thumbnail)) {
-            if (item.result_type === "artist") {
-              mappedArtists.push({
-                id: item.browse_id,
-                title: item.title,
-                image: item.thumbnail,
-                subtitle: item.uploader || "Artist",
-              });
-            } else if (item.result_type === "playlist" || item.result_type === "album") {
-              mappedPlaylists.push({
-                id: item.browse_id,
-                title: item.title,
-                image: item.thumbnail,
-                subtitle: item.uploader || "Playlist",
-              });
-            } else {
-              mappedTracks.push({
-                id: item.id,
-                title: item.title,
-                artist: item.uploader,
-                artistId: item.uploader_id,
-                album: item.result_type === "video" ? "YouTube" : "YT Music",
-                poster: item.thumbnail,
-                previewUrl: "", // Extracted on demand
-                source: "youtube"
-              });
-            }
-          }
+      // Look for the absolute "Top result" to decide if we show the Artist Card
+      const topResult = data.find((item: any) => item.category === "Top result");
+      if (topResult && (topResult.resultType === "artist" || topResult.resultType === "channel")) {
+        const artistName = topResult.artist || topResult.title || topResult.name || topResult.artists?.[0]?.name;
+        const artistId = topResult.browseId || topResult.channelId || topResult.artists?.[0]?.id;
+        const subText = topResult.subscribers ? `${topResult.subscribers} subscribers` : "Artist";
+        
+        mappedArtists.push({
+          id: artistId,
+          title: artistName || "Unknown Artist",
+          image: getPosterUrl(topResult),
+          subtitle: subText,
         });
       }
 
-      // Process iTunes results
-      if (itunesRes.status === 'fulfilled' && itunesRes.value?.results) {
-        itunesRes.value.results.forEach((item: any) => {
-          const posterUrl = item.artworkUrl100 ? item.artworkUrl100.replace("100x100bb.jpg", "600x600bb.jpg") : "";
-          if (!isPlaceholderImage(posterUrl)) {
-            mappedTracks.push({
-              id: item.trackId,
-              title: item.trackName,
-              artist: item.artistName,
-              album: item.collectionName,
-              poster: posterUrl,
-              previewUrl: item.previewUrl,
-              genre: item.primaryGenreName,
-              source: "itunes"
-            });
-          }
-        });
-      }
+      data.forEach((item: any) => {
+        if (item.resultType === "song" || item.resultType === "video") {
+          mappedTracks.push({
+            id: item.videoId,
+            title: item.title,
+            artist: item.artists?.[0]?.name || "Unknown",
+            artistId: item.artists?.[0]?.id,
+            album: item.album?.name || (item.resultType === "video" ? "YouTube" : "YT Music"),
+            poster: getPosterUrl(item),
+            previewUrl: "",
+            source: "youtube"
+          });
+        }
+      });
+
+      videoData.forEach((item: any) => {
+        if (!mappedTracks.find(t => t.id === (item.videoId || item.id))) {
+          mappedYoutube.push({
+            id: item.id || item.videoId,
+            title: item.title,
+            artist: item.artist || item.artists?.[0]?.name || "Unknown",
+            artistId: item.artistId || item.artists?.[0]?.id,
+            album: "YouTube",
+            poster: getPosterUrl(item),
+            previewUrl: "",
+            source: "youtube"
+          });
+        }
+      });
 
       setTracks(mappedTracks);
+      setYoutubeTracks(mappedYoutube.slice(0, 12));
       setSearchArtists(mappedArtists);
-      setSearchPlaylists(mappedPlaylists);
-      if (mappedTracks.length > 0) {
-      }
     } catch (err) {
       console.error("Failed to fetch tracks:", err);
+      setTracks([]);
+      setYoutubeTracks([]);
+      setSearchArtists([]);
     } finally {
       setIsLoading(false);
     }
@@ -174,9 +160,10 @@ export default function App() {
       }
     }
     const storedPin = localStorage.getItem("sidebar_pinned");
-    if (storedPin === "true") {
-      setIsSidebarPinned(true);
-      setIsSidebarOpen(true);
+    if (storedPin !== null) {
+      const isPinned = storedPin === "true";
+      setIsSidebarPinned(isPinned);
+      setIsSidebarOpen(isPinned);
     }
   }, []);
 
@@ -227,119 +214,69 @@ export default function App() {
     }
   };
 
-  // Curation helper to filter out ASMR, sleep, meditation, and noise tracks
-  const filterOutNonMusic = (tracksList: any[]) => {
-    const bannedKeywords = [
-      "asmr", "meditation", "sleep", "relaxing", "yoga", "spa", "wellness",
-      "white noise", "rain", "thunderstorm", "hypnosis", "therapy", "relax",
-      "nature sounds", "water sounds", "calm", "calming", "binaural", "solfeggio",
-      "frequency", "healing", "soundscape", "noise", "study", "studying"
-    ];
-    return tracksList.filter(track => {
-      const title = (track.title || "").toLowerCase();
-      const artist = (track.artist || "").toLowerCase();
-      const album = (track.album || "").toLowerCase();
-      return !bannedKeywords.some(keyword => 
-        title.includes(keyword) || 
-        artist.includes(keyword) || 
-        album.includes(keyword)
-      );
-    });
-  };
 
-  // Load Deezer global charts (Tracks, Artists, Playlists) on launch via Rust CORS Proxy
+
   useEffect(() => {
-    const fetchDeezerCharts = async () => {
+    const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const responseText = await invoke<string>("fetch_web_data", { url: "https://api.deezer.com/chart?limit=30" });
-        const chartData = JSON.parse(responseText);
+        // Fetch charts for top artists and playlists
+        // Add country setting support
+        const country = localStorage.getItem("ytm_country") || "ZZ";
+        const chartsRes = await fetch(`http://127.0.0.1:5050/charts?country=${country}`);
+        const chartsData = await chartsRes.json();
         
-        // Parse & Cache Top Artists (take top 10 for carousel)
-        if (chartData.artists?.data) {
-          const artists = chartData.artists.data
-            .map((artist: any) => ({
-              id: String(artist.id),
-              title: artist.name,
-              subtitle: "Global Top Artist",
-              image: artist.picture_big || artist.picture_medium || artist.picture_small || ""
-            }))
-            .filter((a: any) => !isPlaceholderImage(a.image))
-            .slice(0, 10);
+        if (chartsData.artists && Array.isArray(chartsData.artists)) {
+          const artists = chartsData.artists.slice(0, 10).map((a: any) => ({
+            id: a.browseId,
+            title: a.title,
+            subtitle: "Global Top Artist",
+            image: getPosterUrl(a)
+          }));
           setTopArtists(artists);
           setDefaultArtists(artists);
         }
-        
-        // Parse & Cache Top Playlists (take top 10 for carousel)
-        if (chartData.playlists?.data) {
-          const playlists = chartData.playlists.data
-            .map((playlist: any) => ({
-              id: String(playlist.id),
-              title: playlist.title,
-              subtitle: `Curated by ${playlist.creator?.name || "Deezer"}`,
-              image: playlist.picture_big || playlist.picture_medium || ""
-            }))
-            .filter((p: any) => !isPlaceholderImage(p.image))
-            .slice(0, 10);
-          setTopPlaylists(playlists);
-          setDefaultPlaylists(playlists);
+
+        // Fetch dynamic home sections instead of a static playlist
+        const homeRes = await fetch(`http://127.0.0.1:5050/home?limit=6&country=${country}`);
+        if (homeRes.ok) {
+          const homeData = await homeRes.json();
+          setHomeSections(homeData);
         }
 
-        // Parse, Filter & Cache Top Tracks for homepage discovery grid
-        if (chartData.tracks?.data) {
-          const mappedTracks = chartData.tracks.data
-            .map((t: any) => ({
-              id: `deezer-${t.id}`,
-              title: t.title,
-              artist: t.artist?.name || "Unknown Artist",
-              album: t.album?.title || "Deezer",
-              poster: t.album?.cover_big || t.album?.cover_medium || "",
-              previewUrl: t.preview,
-              source: "deezer"
-            }))
-            .filter((t: any) => !isPlaceholderImage(t.poster));
-          
-          const musicOnlyTracks = filterOutNonMusic(mappedTracks);
-          setTracks(musicOnlyTracks);
-          setDefaultTracks(musicOnlyTracks);
-          if (musicOnlyTracks.length > 0) {
-            
-          }
+        // Use charts videos (which are playlists) for Top Playlists Coverflow
+        if (chartsData.videos && Array.isArray(chartsData.videos)) {
+          const mappedPlaylists = chartsData.videos.map((p: any) => ({
+            id: p.playlistId,
+            title: p.title,
+            subtitle: "Top Charts",
+            image: getPosterUrl(p)
+          }));
+          setTopPlaylists(mappedPlaylists);
+          setDefaultPlaylists(mappedPlaylists);
         }
+
       } catch (err) {
-        console.error("Failed to fetch Deezer charts:", err);
+        console.error("Failed to fetch YT Music home data:", err);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchDeezerCharts();
+    fetchHomeData();
+
+    const handleAuthChange = () => fetchHomeData();
+    window.addEventListener("auth-changed", handleAuthChange);
+    
+    return () => {
+      window.removeEventListener("auth-changed", handleAuthChange);
+    };
   }, []);
 
-  // Fetch and play artist top tracks from Deezer
-  const handlePlayArtist = async (artistId: string) => {
+  const handlePlayArtist = async (_artistId: string) => {
     setIsLoading(true);
     try {
-      const responseText = await invoke<string>("fetch_web_data", { url: `https://api.deezer.com/artist/${artistId}/top` });
-      const tracksData = JSON.parse(responseText);
-      if (tracksData.data && tracksData.data.length > 0) {
-        const mappedTracks = tracksData.data
-          .map((t: any) => ({
-            id: `deezer-${t.id}`,
-            title: t.title,
-            artist: t.artist?.name || "Unknown Artist",
-            album: t.album?.title || "Deezer",
-            poster: t.album?.cover_big || t.album?.cover_medium || "",
-            previewUrl: t.preview,
-            source: "deezer"
-          }))
-          .filter((t: any) => !isPlaceholderImage(t.poster));
-
-        if (mappedTracks.length > 0) {
-          setTracks(mappedTracks);
-          handleTrackSelect(mappedTracks[0]);
-        }
-      }
+      setTracks([]);
     } catch (err) {
       console.error("Failed to play artist tracks:", err);
     } finally {
@@ -347,60 +284,14 @@ export default function App() {
     }
   };
 
-  // Fetch artist top tracks and load in grid without autopaying
   const handleLoadArtistTracks = async (artistId: string) => {
-    setIsLoading(true);
-    try {
-      const responseText = await invoke<string>("fetch_web_data", { url: `https://api.deezer.com/artist/${artistId}/top` });
-      const tracksData = JSON.parse(responseText);
-      if (tracksData.data && tracksData.data.length > 0) {
-        const mappedTracks = tracksData.data
-          .map((t: any) => ({
-            id: `deezer-${t.id}`,
-            title: t.title,
-            artist: t.artist?.name || "Unknown Artist",
-            album: t.album?.title || "Deezer",
-            poster: t.album?.cover_big || t.album?.cover_medium || "",
-            previewUrl: t.preview,
-            source: "deezer"
-          }))
-          .filter((t: any) => !isPlaceholderImage(t.poster));
-
-        if (mappedTracks.length > 0) {
-          setTracks(mappedTracks);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load artist tracks:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    setActiveArtistId(artistId);
   };
 
-  // Fetch and play playlist tracks from Deezer
-  const handlePlayPlaylist = async (playlistId: string) => {
+  const handlePlayPlaylist = async (_playlistId: string) => {
     setIsLoading(true);
     try {
-      const responseText = await invoke<string>("fetch_web_data", { url: `https://api.deezer.com/playlist/${playlistId}` });
-      const playlistData = JSON.parse(responseText);
-      if (playlistData.tracks?.data && playlistData.tracks.data.length > 0) {
-        const mappedTracks = playlistData.tracks.data
-          .map((t: any) => ({
-            id: `deezer-${t.id}`,
-            title: t.title,
-            artist: t.artist?.name || "Unknown Artist",
-            album: t.album?.title || "Deezer",
-            poster: t.album?.cover_big || t.album?.cover_medium || "",
-            previewUrl: t.preview,
-            source: "deezer"
-          }))
-          .filter((t: any) => !isPlaceholderImage(t.poster));
-
-        if (mappedTracks.length > 0) {
-          setTracks(mappedTracks);
-          handleTrackSelect(mappedTracks[0]);
-        }
-      }
+      setTracks([]);
     } catch (err) {
       console.error("Failed to play playlist tracks:", err);
     } finally {
@@ -408,34 +299,14 @@ export default function App() {
     }
   };
 
-  // Fetch playlist tracks and load in grid without autopaying
-  const handleLoadPlaylistTracks = async (playlistId: string) => {
-    setIsLoading(true);
-    try {
-      const responseText = await invoke<string>("fetch_web_data", { url: `https://api.deezer.com/playlist/${playlistId}` });
-      const playlistData = JSON.parse(responseText);
-      if (playlistData.tracks?.data && playlistData.tracks.data.length > 0) {
-        const mappedTracks = playlistData.tracks.data
-          .map((t: any) => ({
-            id: `deezer-${t.id}`,
-            title: t.title,
-            artist: t.artist?.name || "Unknown Artist",
-            album: t.album?.title || "Deezer",
-            poster: t.album?.cover_big || t.album?.cover_medium || "",
-            previewUrl: t.preview,
-            source: "deezer"
-          }))
-          .filter((t: any) => !isPlaceholderImage(t.poster));
-
-        if (mappedTracks.length > 0) {
-          setTracks(mappedTracks);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load playlist tracks:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleLoadPlaylistTracks = (playlist: any) => {
+    setActiveAlbumData({
+      id: playlist.playlistId || playlist.id,
+      title: playlist.title,
+      artist: playlist.author?.name || (typeof playlist.author === 'string' ? playlist.author : "You"),
+      thumbnail: getPosterUrl(playlist),
+      type: "playlist"
+    });
   };
 
   // Audio elements event listeners
@@ -492,6 +363,49 @@ export default function App() {
     handleTrackSelect(playlistTracks[startIndex]);
   };
 
+  const handleLoadAlbum = (id: string, item: any) => {
+    setActiveAlbumData({
+      id: id,
+      title: item.title || "Unknown Album",
+      artist: item.artist || item.uploader || item.artists?.[0]?.name || "Various Artists",
+      thumbnail: getPosterUrl(item)
+    });
+  };
+
+  // Unified handler for HomeSection clicks
+  const handleHomeItemClick = (item: any) => {
+    if (item.videoId) {
+      // It's a track
+      const track = {
+        id: item.videoId,
+        title: item.title,
+        artist: item.artists?.[0]?.name || "Unknown",
+        artistId: item.artists?.[0]?.id,
+        album: item.album?.name || "YT Music",
+        poster: getPosterUrl(item),
+        previewUrl: "",
+        source: "youtube"
+      };
+      // For Quick Picks, we should probably set the tracks array so it can autoplay next
+      // But for simplicity, we just play this single track if we don't have a playlist context
+      handleTrackSelect(track);
+    } else if (item.playlistId) {
+      // It's a playlist or album
+      if (item.playlistId.startsWith("VL")) {
+        // sometimes playlists are prefixed with VL
+        item.playlistId = item.playlistId.substring(2);
+      }
+      handleLoadAlbum(item.playlistId, item);
+    } else if (item.browseId) {
+      // It's an album or artist
+      if (item.browseId.startsWith("UC") || item.browseId.startsWith("HC")) {
+        setActiveArtistId(item.browseId);
+      } else {
+        handleLoadAlbum(item.browseId, item);
+      }
+    }
+  };
+
   const handleTrackSelect = async (track: any, resumeFromCache = false) => {
     if (!track) return;
     if (currentTrack && audioRef.current) {
@@ -545,67 +459,34 @@ export default function App() {
       return updated;
     });
 
-    if (audioRef.current) {
-      if (track.source === 'youtube') {
-        try {
-          if (!track.previewUrl) {
-            const audioUrl = await extractAudioUrl(track.id);
-            track.previewUrl = audioUrl; // Cache the extracted URL
-          }
-          if (!audioRef.current) return;
-          audioRef.current.src = track.previewUrl;
-          audioRef.current.play().then(() => {
-            setIsPlaying(true);
-          }).catch(err => {
-            console.error("Playback failed:", err);
-          });
-        } catch (err) {
-          console.error("YouTube playback failed:", err);
-        }
-      } else if (track.source === 'deezer' || track.source === 'itunes') {
-        try {
-          // Resolve full YouTube audio url if not cached
-          if (!track.fullYtUrl) {
-            console.log(`Searching YouTube for: ${track.title} ${track.artist}`);
-            const ytResults = await searchYouTube(`${track.title} ${track.artist}`);
-            if (ytResults && ytResults.length > 0) {
-              const bestResult = ytResults.find(r => r.id && (r.result_type === 'song' || r.result_type === 'video')) || ytResults.find(r => r.id);
-              if (bestResult) {
-                console.log(`Extracting full audio from YouTube ID: ${bestResult.id}`);
-                const fullAudioUrl = await extractAudioUrl(bestResult.id);
-                track.fullYtUrl = fullAudioUrl; // Cache on track object
-              } else {
-                console.warn(`No playable YouTube video ID found for: ${track.title}`);
-              }
-            }
-          }
-          
-          const playUrl = track.fullYtUrl || track.previewUrl;
-          if (playUrl) {
-            audioRef.current.src = playUrl;
-            audioRef.current.play().then(() => {
-              setIsPlaying(true);
-            }).catch(err => {
-              console.error("Playback failed:", err);
-            });
-          }
-        } catch (err) {
-          console.error("Failed to fetch full YouTube audio, falling back to preview:", err);
-          if (track.previewUrl) {
-            audioRef.current.src = track.previewUrl;
-            audioRef.current.play().then(() => {
-              setIsPlaying(true);
-            }).catch(e => console.error("Preview playback failed:", e));
-          }
-        }
-      } else {
-        audioRef.current.src = track.previewUrl;
+    // Add track to recent history
+    try {
+      await fetch("http://127.0.0.1:5050/history/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ song: track.id })
+      });
+    } catch (err) {
+      console.error("Failed to add to history:", err);
+    }
+
+    // Fetch actual stream URL
+    try {
+      const res = await fetch(`http://127.0.0.1:5050/stream/${track.id}`);
+      if (!res.ok) throw new Error("Failed to fetch stream URL");
+      const data = await res.json();
+      
+      if (audioRef.current) {
+        audioRef.current.src = data.url;
         audioRef.current.play().then(() => {
           setIsPlaying(true);
         }).catch(err => {
           console.error("Playback failed:", err);
+          setIsPlaying(false);
         });
       }
+    } catch (err) {
+      console.error("Stream fetch error:", err);
     }
   };
 
@@ -965,14 +846,15 @@ export default function App() {
           onClose={() => {
             if (!isSidebarPinned) setIsSidebarOpen(false);
           }}
-          activeNav={activeNav}
-          setActiveNav={(id) => {
-            setActiveNav(id);
+          activeNav={activeView}
+          setActiveNav={(id: any) => {
+            setActiveView(id);
+            setActiveArtistId(null);
+            setActiveAlbumData(null);
             if (id === "home") {
               setIsSearchActive(false);
               setSearchQuery("");
               // Restore cached homepage charts from state instantly
-              setTracks(defaultTracks);
               setTopArtists(defaultArtists);
               setTopPlaylists(defaultPlaylists);
             }
@@ -1018,19 +900,19 @@ export default function App() {
             {/* Inner wrapper for Lenis to calculate correct content height */}
             <div className="flex flex-col gap-10 w-full min-h-full">
               {/* Header Area for Search */}
-            {!(activeArtistId || activeAlbumData) && (
+            {!(activeArtistId || activeAlbumData) && activeView !== "profile" && (
               <div className="flex items-center justify-end pt-[29px] sticky top-0 z-40 bg-transparent">
                 <div className="pr-4">
                   <SearchBar 
                     query={searchQuery}
                     onChange={setSearchQuery}
-                    onSearch={() => searchTracks(searchQuery)}
+                    onSearch={(q) => handleSearch(q)}
                   />
                 </div>
               </div>
             )}
 
-            {!(activeArtistId || activeAlbumData) && (
+            {activeView === "home" && !(activeArtistId || activeAlbumData) && (
               <>
                 {!isSearchActive && (
                   <div className="w-full px-8 box-border overflow-visible">
@@ -1077,51 +959,81 @@ export default function App() {
                   </div>
                 )}
 
-                {isSearchActive && (searchArtists.length > 0 || searchPlaylists.length > 0) && (
+                {isSearchActive && searchArtists.length > 0 && (
                   <div className="flex flex-col lg:flex-row gap-12 w-full justify-between items-stretch px-8 box-border overflow-visible mb-12">
-                    {searchArtists.length > 0 && (
-                      <div className="flex-1 overflow-visible">
-                        <h3 className="text-white/60 font-semibold tracking-widest text-xs mb-4 ml-4 uppercase">Artist</h3>
-                        {searchArtists.slice(0, 1).map(artist => (
-                          <TopArtistCard 
-                            key={artist.id}
-                            artist={artist}
-                            onClick={() => setActiveArtistId(artist.id)}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {searchPlaylists.length > 0 && (
-                      <div className="flex-1 overflow-visible">
-                        <Coverflow 
-                          title="Playlists & Albums" 
-                          items={searchPlaylists.map(playlist => ({
-                            id: playlist.id,
-                            title: playlist.title,
-                            subtitle: playlist.subtitle,
-                            image: playlist.image,
-                            onClick: () => console.log("Navigate to Playlist", playlist.id), // TODO: Playlist Page
-                            onPlay: () => console.log("Play Playlist", playlist.id)
-                          }))}
-                          type="playlists"
+                    <div className="flex-1 overflow-visible">
+                      <h3 className="text-white/60 font-semibold tracking-widest text-xs mb-4 ml-4 uppercase">Artist</h3>
+                      {searchArtists.slice(0, 1).map(artist => (
+                        <TopArtistCard 
+                          key={artist.id}
+                          artist={artist}
+                          onClick={() => setActiveArtistId(artist.id)}
                         />
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <TrackGrid 
-                  tracks={tracks}
-                  onTrackSelect={handleTrackSelect}
-                  currentTrackId={currentTrack?.id}
-                  isPlaying={isPlaying}
-                  isLoading={isLoading}
-                  onArtistClick={handleLoadArtistTracks}
-                  title={isSearchActive ? "Songs & Videos" : "Today's Hits"}
-                />
+                {!isSearchActive && homeSections.map((section, idx) => (
+                  <HomeSection 
+                    key={idx} 
+                    section={section} 
+                    onItemClick={handleHomeItemClick} 
+                  />
+                ))}
+
+                {isSearchActive && tracks.length > 0 && (
+                  <TrackGrid 
+                    tracks={tracks}
+                    onTrackSelect={handleTrackSelect}
+                    currentTrackId={currentTrack?.id}
+                    isPlaying={isPlaying}
+                    isLoading={isLoading}
+                    onArtistClick={handleLoadArtistTracks}
+                    title="Songs & Videos"
+                  />
+                )}
+
+                {isSearchActive && youtubeTracks.length > 0 && (
+                  <TrackGrid 
+                    tracks={youtubeTracks}
+                    onTrackSelect={handleTrackSelect}
+                    currentTrackId={currentTrack?.id}
+                    isPlaying={isPlaying}
+                    isLoading={isLoading}
+                    onArtistClick={handleLoadArtistTracks}
+                    title="More from YouTube"
+                  />
+                )}
               </>
             )}
+            
+            {activeView === "profile" && !(activeArtistId || activeAlbumData) && <ProfilePage />}
+
+            {activeView === "liked" && !(activeArtistId || activeAlbumData) && (
+              <LikedSongsView 
+                onTrackSelect={handleTrackSelect}
+                currentTrackId={currentTrack?.id}
+                isPlaying={isPlaying}
+                onArtistClick={handleLoadArtistTracks}
+              />
+            )}
+
+            {activeView === "history" && !(activeArtistId || activeAlbumData) && (
+              <HistoryView 
+                onTrackSelect={handleTrackSelect}
+                currentTrackId={currentTrack?.id}
+                isPlaying={isPlaying}
+                onArtistClick={handleLoadArtistTracks}
+              />
+            )}
+
+            {activeView === "playlists" && !(activeArtistId || activeAlbumData) && (
+              <PlaylistsView 
+                onPlaylistSelect={handleLoadPlaylistTracks}
+              />
+            )}
+
             {activeArtistId && (
               <div style={{ display: activeAlbumData ? 'none' : 'block' }}>
                 <ArtistPage 
@@ -1136,10 +1048,10 @@ export default function App() {
                   currentTrackId={currentTrack?.id}
                   onAlbumClick={(album) => {
                     setActiveAlbumData({
-                      id: album.browse_id || album.id,
-                      title: album.title,
-                      artist: album.uploader,
-                      thumbnail: album.thumbnail
+                      id: album.browseId || album.browse_id || album.id || "",
+                      title: album.title || "Unknown Album",
+                      artist: album.uploader || album.artists?.[0]?.name || "Unknown Artist",
+                      thumbnail: getPosterUrl(album)
                     });
                   }}
                 />
@@ -1151,6 +1063,7 @@ export default function App() {
                 albumTitle={activeAlbumData.title}
                 albumArtist={activeAlbumData.artist}
                 albumThumbnail={activeAlbumData.thumbnail}
+                type={activeAlbumData.type || "album"}
                 onClose={() => setActiveAlbumData(null)}
                 onPlayPlaylist={handlePlayAlbumQueue}
                 currentTrackId={currentTrack?.id}

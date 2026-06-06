@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./coverflow.css";
+import { getHighResImage } from "../../utils/imageUtils";
 
 interface CoverflowItem {
   id: string;
@@ -183,7 +184,7 @@ export function Coverflow({ title, items, type }: CoverflowProps) {
                 {/* Image and Play overlay */}
                 <div className="coverflow-image-wrapper">
                   <img 
-                    src={item.image} 
+                    src={getHighResImage(item.image)} 
                     alt={item.title} 
                     className="coverflow-image" 
                     draggable={false}

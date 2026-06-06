@@ -1,6 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { fetchArtistDetails } from '../../services/youtube/youtubeSearch';
-import { YouTubeArtistDetails, YouTubeSearchResult } from '../../services/youtube/types';
+import { getPosterUrl } from "../../utils/imageUtils";
+
+interface SearchResult {
+  id?: string;
+  videoId?: string;
+  browseId?: string;
+  browse_id?: string;
+  title: string;
+  thumbnail?: string;
+  thumbnails?: { url: string; width: number; height: number }[];
+  duration?: string;
+  uploader?: string;
+  artists?: { name: string; id?: string }[];
+  uploader_id?: string;
+  views?: string;
+  result_type?: string;
+  date?: string;
+  isExplicit?: boolean;
+}
+
+interface ArtistDetails {
+  name: string;
+  description: string;
+  image: string;
+  top_songs: SearchResult[];
+  albums: SearchResult[];
+  singles: SearchResult[];
+  views?: string;
+  isPodcastChannel?: boolean;
+}
 import './artistpage.css';
 
 interface ArtistPageProps {
@@ -9,11 +37,11 @@ interface ArtistPageProps {
   onPlayTrack: (track: any) => void;
   currentTrackId?: string | number;
   fallbackViews?: string;
-  onAlbumClick?: (album: YouTubeSearchResult) => void;
+  onAlbumClick?: (album: SearchResult) => void;
 }
 
 const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack, currentTrackId, fallbackViews, onAlbumClick }) => {
-  const [artist, setArtist] = useState<YouTubeArtistDetails | null>(null);
+  const [artist, setArtist] = useState<ArtistDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [showAllSongs, setShowAllSongs] = useState(false);
@@ -21,9 +49,23 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
   useEffect(() => {
     const loadArtist = async () => {
       setIsLoading(true);
-      const data = await fetchArtistDetails(browseId);
-      setArtist(data);
-      setIsLoading(false);
+      try {
+        const res = await fetch(`http://127.0.0.1:5050/artist/${browseId}`);
+        const data = await res.json();
+        setArtist({
+          name: data.name || "",
+          description: data.description || "",
+          image: getPosterUrl(data),
+          top_songs: data.songs?.results || [],
+          albums: data.albums?.results || [],
+          singles: data.singles?.results || [],
+          views: data.views || ""
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     if (browseId) {
@@ -50,18 +92,19 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
     );
   }
 
-  // Map YouTubeSearchResult to our internal track format
-  const mapToInternalTrack = (item: YouTubeSearchResult) => {
+  // Map SearchResult to our internal track format
+  const mapToInternalTrack = (item: SearchResult) => {
     return {
-      id: item.id,
+      id: item.videoId || item.id,
       title: item.title,
-      artist: item.uploader || artist.name,
-      artistId: item.uploader_id || browseId,
+      artist: item.artists?.[0]?.name || item.uploader || artist.name,
+      artistId: item.artists?.[0]?.id || item.uploader_id || browseId,
       album: "YT Music",
-      poster: item.thumbnail,
+      poster: getPosterUrl(item),
       previewUrl: "",
       source: "youtube",
-      views: item.views
+      views: item.views,
+      date: item.date
     };
   };
 
@@ -70,9 +113,10 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
 
   const displayViews = artist.views || fallbackViews;
 
-  const renderVinylCard = (item: YouTubeSearchResult, typeLabel: string, index: number) => {
+  const renderVinylCard = (item: SearchResult, typeLabel: string, index: number) => {
+    const poster = getPosterUrl(item);
     return (
-      <div key={item.id || item.browse_id || `vinyl-${index}`} className="album-vinyl-card" onClick={() => onAlbumClick && onAlbumClick({ ...item, uploader: artist?.name || item.uploader })}>
+      <div key={item.id || item.browseId || item.browse_id || `vinyl-${index}`} className="album-vinyl-card" onClick={() => onAlbumClick && onAlbumClick({ ...item, uploader: artist?.name || item.uploader })}>
         <div className="album-vinyl-wrapper">
           {/* Vinyl Disc */}
           <div className="album-vinyl-disc">
@@ -80,18 +124,18 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
             <div className="album-vinyl-groove album-vinyl-groove-2"></div>
             <div className="album-vinyl-groove album-vinyl-groove-3"></div>
             <div className="album-vinyl-label">
-              <img src={item.thumbnail?.replace(/=w\d+-h\d+/g, "=w500-h500").replace("hqdefault", "maxresdefault")} alt="label" />
+              <img src={poster} alt="label" />
               <div className="album-vinyl-hole"></div>
             </div>
           </div>
           {/* Sleeve */}
           <div className="album-vinyl-sleeve">
-            <img src={item.thumbnail?.replace(/=w\d+-h\d+/g, "=w1000-h1000").replace("hqdefault", "maxresdefault")} alt={item.title} />
+            <img src={poster} alt={item.title} />
             <div className="album-sleeve-gloss"></div>
           </div>
         </div>
         <p className="album-card-title">{item.title}</p>
-        <p className="album-card-subtitle">{item.uploader || typeLabel}</p>
+        <p className="album-card-subtitle">{item.uploader || item.artists?.[0]?.name || typeLabel}</p>
       </div>
     );
   };
@@ -115,9 +159,9 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
         {/* Left Aligned Hero Section */}
         <div className="flex flex-col items-start gap-6 relative z-10">
           {/* Circular Profile Picture */}
-          <div className="w-64 h-64 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
+          <div className="w-64 h-64 rounded-full overflow-hidden shadow-2xl border-4 border-white/10 flex-shrink-0">
              <img 
-               src={artist.image?.replace(/=w\d+-h\d+/g, "=w1000-h1000").replace("hqdefault", "maxresdefault")} 
+               src={artist.image} 
                alt={artist.name} 
                className="w-full h-full object-cover"
              />
@@ -166,7 +210,9 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
         {/* Top Songs Section */}
         {mappedTopSongs.length > 0 && (
           <div className="flex flex-col gap-6 relative z-20">
-            <h2 className="text-3xl font-black text-white tracking-tight">Top Songs</h2>
+            <h2 className="text-3xl font-black text-white tracking-tight">
+              {artist.isPodcastChannel ? "Latest Episodes & Videos" : "Top Songs"}
+            </h2>
             <div className="flex flex-col gap-2">
               {displayedSongs.map((track, index) => {
                 const isCurrent = currentTrackId === track.id;
@@ -200,9 +246,9 @@ const ArtistPage: React.FC<ArtistPageProps> = ({ browseId, onClose, onPlayTrack,
                         {track.artist}
                       </p>
                     </div>
-                    {track.views && (
+                    {(track.views || track.date) && (
                       <div className="text-white/40 text-sm hidden md:block pr-4">
-                        {track.views} plays
+                        {track.views ? (track.views.includes('views') ? track.views : `${track.views} plays`) : track.date}
                       </div>
                     )}
                   </div>

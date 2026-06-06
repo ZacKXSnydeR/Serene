@@ -16,7 +16,6 @@
   padding: 16px 8px; /* Enhanced vertical padding for better spacing */
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
   will-change: transform, opacity;
-  contain: content;
 }
 
 .sidebar-open {
@@ -181,4 +180,61 @@
 .sidebar-pin-btn-active {
   color: #F26B50 !important;
   background-color: transparent !important;
+}
+
+/* Tooltip styling */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 14px); /* Position cleanly to the right */
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0s;
+  z-index: 1000;
+}
+
+[data-tooltip]::before {
+  content: "";
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  border-width: 6px 6px 6px 0;
+  border-style: solid;
+  border-color: transparent rgba(20, 20, 20, 0.95) transparent transparent;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0s;
+  z-index: 1000;
+}
+
+/* Show tooltip after hovering a bit longer (0.5s delay) */
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  transition-delay: 0.5s;
 }

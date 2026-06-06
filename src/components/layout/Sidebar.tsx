@@ -19,18 +19,22 @@ export function Sidebar({ isOpen, onClose, activeNav, setActiveNav, isPinned, on
     )},
     { id: "library", label: "Your Library", icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
       </svg>
     )},
     { id: "playlists", label: "Playlists", icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3" />
       </svg>
     )},
-    { id: "settings", label: "Settings", icon: (
+    { id: "liked", label: "Liked Songs", icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.566z" />
+      </svg>
+    )},
+    { id: "history", label: "History", icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     )}
   ];
@@ -64,6 +68,7 @@ export function Sidebar({ isOpen, onClose, activeNav, setActiveNav, isPinned, on
               className={`sidebar-nav-item group ${
                 isActive ? "sidebar-nav-item-active" : "sidebar-nav-item-inactive"
               }`}
+              data-tooltip={item.label}
             >
               {/* Icon */}
               <span
@@ -83,7 +88,7 @@ export function Sidebar({ isOpen, onClose, activeNav, setActiveNav, isPinned, on
           className={`sidebar-nav-item sidebar-pin-btn group ${
             isPinned ? "sidebar-pin-btn-active" : "sidebar-nav-item-inactive"
           }`}
-          title={isPinned ? "Unpin Sidebar" : "Pin Sidebar"}
+          data-tooltip={isPinned ? "Unpin Sidebar" : "Pin Sidebar"}
         >
           <span className={`sidebar-icon ${isPinned ? "sidebar-icon-active" : ""}`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill={isPinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -96,7 +101,11 @@ export function Sidebar({ isOpen, onClose, activeNav, setActiveNav, isPinned, on
 
       {/* Premium Profile Button always resting at the very bottom */}
       <div className="sidebar-profile-container">
-        <button className="sidebar-profile-btn group" title="User Profile">
+        <button 
+          className={`sidebar-profile-btn group ${activeNav === 'profile' ? 'bg-white/10 text-white' : ''}`} 
+          data-tooltip="User Profile"
+          onClick={() => setActiveNav('profile')}
+        >
           <div className="sidebar-profile-avatar">
             <svg className="w-5 h-5 transition-colors duration-200" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

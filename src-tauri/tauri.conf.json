@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "Serene",
   "version": "0.1.0",
-  "identifier": "com.sparsho.tauri-app",
+  "identifier": "com.serene.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-app",
+        "title": "Serene",
         "width": 1280,
         "height": 720,
         "minWidth": 1024,
@@ -29,7 +29,8 @@
     "active": true,
     "targets": "all",
     "externalBin": [
-      "binaries/yt-dlp"
+      "binaries/yt-dlp",
+      "binaries/ytmusic_server"
     ],
     "icon": [
       "icons/32x32.png",

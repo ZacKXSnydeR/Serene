@@ -1,7 +1,20 @@
 use serde_json::Value;
 use tauri::Manager;
+use tauri_plugin_shell::ShellExt;
 
-pub mod youtube;
+
+
+#[tauri::command]
+async fn open_youtube_login(app: tauri::AppHandle) -> Result<(), String> {
+    let data_dir = app.path().app_data_dir().unwrap().join("ytm_login_profile");
+    tauri::WebviewWindowBuilder::new(&app, "ytm-login", tauri::WebviewUrl::External("https://music.youtube.com".parse().unwrap()))
+        .title("YouTube Music Login")
+        .inner_size(800.0, 600.0)
+        .data_directory(data_dir)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
 #[tauri::command]
 async fn admin_rpc(method: String, params: Option<Value>) -> Result<Value, String> {
@@ -71,6 +84,20 @@ pub fn run() {
                 .expect("Failed to get app data directory");
             std::fs::create_dir_all(&app_dir).ok();
 
+            // Spawn sidecar
+            match app.shell().sidecar("ytmusic_server") {
+                Ok(sidecar_command) => {
+                    if let Err(e) = sidecar_command.spawn() {
+                        eprintln!("Failed to spawn ytmusic_server sidecar: {}", e);
+                    } else {
+                        println!("Successfully spawned ytmusic_server sidecar");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to configure sidecar command: {}", e);
+                }
+            }
+
             Ok(())
         })
         .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -79,12 +106,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             admin_rpc,
             fetch_web_data,
-            youtube::ytdlp::youtube_detect_browser,
-            youtube::ytdlp::youtube_extract_audio,
-            youtube::ytdlp::youtube_get_metadata,
-            youtube::search::youtube_search,
-            youtube::search::ytmusic_get_artist,
-            youtube::search::ytmusic_get_album,
+            open_youtube_login
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

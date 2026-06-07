@@ -198,6 +198,10 @@ def get_stream_url(videoId: str):
         'extract_flat': False,
     }
 
+    cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")
+    if os.path.exists(cookie_file):
+        ydl_opts['cookiefile'] = cookie_file
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # We fetch from generic YouTube for better reliability

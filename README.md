@@ -1,55 +1,66 @@
-# Cyrus Interface
+# Serene
 
-This is an enterprise-standard Tauri + React + TypeScript + TailwindCSS application boilerplate.
+A highly-optimized, native desktop client for YouTube Music built with Tauri, React, and Python.
 
-## 📂 Project Structure
+Serene bridges the gap between local library management and cloud streaming, offering a fluid, offline-first experience wrapped in a modern, vanilla CSS-driven interface.
 
-```text
-src/
-├── assets/        # Static assets like images, fonts, icons
-├── components/    # Reusable UI components
-│   ├── layout/    # Structural components (Navbar, Sidebar, etc.)
-│   └── ui/        # Base UI elements (Button, Input, Modal, etc.)
-├── features/      # Feature-based modules (Domain-driven structure)
-├── hooks/         # Custom React hooks
-├── layouts/       # Page layout templates
-├── services/      # External integrations (API, Tauri invokes, etc.)
-├── store/         # Global state management
-├── styles/        # Global CSS, Tailwind entry points
-├── types/         # Global TypeScript definitions
-├── utils/         # Helper functions and utilities
-├── App.tsx        # Main application root
-└── main.tsx       # Application entry point
-```
+## Features
 
-## 🚀 Getting Started
+- **Offline-First Architecture**: Features a robust local SQLite database that maintains your playlists, listening history, and liked songs even without an internet connection.
+- **Bi-Directional Sync**: Seamlessly pushes local library changes to the official YouTube Music servers upon authentication.
+- **Native Performance**: Built on Tauri for minimal resource footprint and near-instant load times.
+- **Bundled Python Sidecar**: Offloads complex API interactions and heavy data processing to an embedded Python server (`ytmusicapi`), packaged via PyInstaller.
+- **Fluid UI/UX**: Designed from the ground up with custom vanilla CSS to deliver 60fps micro-animations, glassmorphism, and a highly polished dark-mode aesthetic.
+- **Advanced Playback Engine**: Custom React state management for queue handling, shuffling, and seamless Youtube video stream extraction.
 
-### Development
+## Architecture
 
-To start the development server with Tauri:
+- **Frontend**: React 19, TypeScript, Zustand (State Management)
+- **Backend (Host)**: Rust (Tauri 2.0)
+- **Sidecar API**: Python (Flask, `ytmusicapi`)
+- **Database**: SQLite (via Tauri plugins)
+- **Styling**: Vanilla CSS
 
-```bash
-npm run tauri dev
-```
+## Development
 
-If you only want to run the web interface (without Tauri window):
+Prerequisites:
+- Node.js (v18+)
+- Rust & Cargo
+- Python 3.10+
+- Visual Studio Build Tools (Windows)
 
-```bash
-npm run dev
-```
+### Setup
 
-### Build
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-To build the application for production:
+2. Set up the Python virtual environment and sidecar:
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   
+   # Build the Python executable for Tauri
+   npm run build:python
+   ```
+
+3. Start the development environment:
+   ```bash
+   npm run tauri dev
+   ```
+
+## Build
+
+To compile a production-ready installer (`.msi` or `.exe`):
 
 ```bash
 npm run tauri build
 ```
 
-## 🛠️ Stack
+*Note: Building the production app will automatically package the Python sidecar and bundle the SQLite migrations.*
 
-- **Tauri 2.0**: Native desktop app shell.
-- **Vite**: Ultra-fast frontend build tool.
-- **React 19**: Modern UI library.
-- **TypeScript**: Static typing for safer code.
-- **TailwindCSS 4**: Utility-first CSS framework (configured via `@tailwindcss/vite`).
+## License
+
+MIT

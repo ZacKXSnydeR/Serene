@@ -196,6 +196,7 @@ def get_stream_url(videoId: str):
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
+        'js_runtimes': {'node': {}}
     }
 
     cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")

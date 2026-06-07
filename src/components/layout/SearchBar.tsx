@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "./searchbar.css";
+import { getBaseUrl } from "../../api/client";
 
 interface SearchBarProps {
   query: string;
@@ -44,7 +45,7 @@ export function SearchBar({ query, onChange, onSearch }: SearchBarProps) {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:5050/search/suggestions?query=${encodeURIComponent(query)}`);
+        const res = await fetch(`${getBaseUrl()}/search/suggestions?query=${encodeURIComponent(query)}`);
         const data = await res.json();
         setSuggestions(data);
       } catch (err) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TrackGrid } from "../home/TrackGrid";
 import { getPosterUrl } from "../../utils/imageUtils";
+import { getBaseUrl } from "../../api/client";
 
 export function HistoryView({ onTrackSelect, currentTrackId, isPlaying, onArtistClick }: any) {
   const [allTracks, setAllTracks] = useState<any[]>([]);
@@ -13,7 +14,7 @@ export function HistoryView({ onTrackSelect, currentTrackId, isPlaying, onArtist
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:5050/history`);
+      const res = await fetch(`${getBaseUrl()}/history`);
       if (!res.ok) throw new Error("Failed to fetch history. Are you authenticated?");
       const data = await res.json();
       

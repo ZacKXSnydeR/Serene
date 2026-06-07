@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Lenis from 'lenis';
 import { getPosterUrl } from "../../utils/imageUtils";
-
 import "./nowplayingsidebar.css";
+import { getBaseUrl } from "../../api/client";
+import { usePlayerStore } from "../../store/usePlayerStore";
 
 interface NowPlayingSidebarProps {
   isOpen: boolean;
@@ -22,6 +24,8 @@ interface NowPlayingSidebarProps {
   onNext?: () => void;
   onPrevious?: () => void;
   onFullscreenToggle?: () => void;
+  isShuffleOn?: boolean;
+  onToggleShuffle?: () => void;
 }
 
 export function NowPlayingSidebar({
@@ -42,26 +46,63 @@ export function NowPlayingSidebar({
   onRepeatToggle,
   onNext,
   onPrevious,
-  onFullscreenToggle
+  onFullscreenToggle,
+  isShuffleOn,
+  onToggleShuffle
 }: NowPlayingSidebarProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [popularFetchedTracks, setPopularFetchedTracks] = useState<any[]>([]);
-  const [isLoadingPopular, setIsLoadingPopular] = useState(false);
   const [artistDetails, setArtistDetails] = useState<any>(null);
-  const [artistStats, setArtistStats] = useState<string>("");
+  const [artistStats, setArtistStats] = useState<string | null>(null);
+  const queueRef = useRef<HTMLDivElement>(null);
+  
+  const isFetchingNextPage = usePlayerStore(state => state.isFetchingNextPage);
+  const fetchNextQueueBatch = usePlayerStore(state => state.fetchNextQueueBatch);
+
+  // Local Lenis instance for the queue sidebar
+  useEffect(() => {
+    if (!isOpen || !queueRef.current) return;
+    
+    const lenis = new Lenis({
+      wrapper: queueRef.current,
+      content: queueRef.current.firstElementChild as HTMLElement || queueRef.current,
+      lerp: 0.1,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
+    });
+
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+    rafId = requestAnimationFrame(raf);
+
+    // Stop scroll propagation so the global Lenis doesn't hijack it
+    const el = queueRef.current;
+    const stopProp = (e: Event) => e.stopPropagation();
+    el.addEventListener('wheel', stopProp, { passive: false });
+    el.addEventListener('touchstart', stopProp, { passive: false });
+    el.addEventListener('touchmove', stopProp, { passive: false });
+
+    return () => {
+      el.removeEventListener('wheel', stopProp);
+      el.removeEventListener('touchstart', stopProp);
+      el.removeEventListener('touchmove', stopProp);
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!track || !track.artist) return;
     let isMounted = true;
-    setIsLoadingPopular(true);
-    setPopularFetchedTracks([]); // Clear previous
     setArtistDetails(null);
     setArtistStats("");
 
     const loadArtistDetails = async () => {
       if (track.artistId) {
         try {
-          const res = await fetch(`http://127.0.0.1:5050/artist/${track.artistId}`);
+          const res = await fetch(`${getBaseUrl()}/artist/${track.artistId}`);
           if (!res.ok) throw new Error("Failed to fetch artist details");
           const data = await res.json();
           if (isMounted) {
@@ -72,30 +113,13 @@ export function NowPlayingSidebar({
               image: getPosterUrl(data)
             });
             setArtistStats(data.views || data.subscribers || "");
-            
             if (data.songs?.results) {
-              const mappedPopular = data.songs.results.slice(0, 3).map((item: any) => ({
-                id: item.videoId || item.id || item.browseId,
-                title: item.title,
-                artist: item.artists?.[0]?.name || data.name,
-                poster: getPosterUrl(item),
-                views: item.views || "",
-                source: "youtube"
-              }));
-              setPopularFetchedTracks(mappedPopular);
+              // We no longer fetch popular songs for the sidebar queue, we use the global queue
             }
           }
         } catch (err) {
           console.error("Failed to load artist details for sidebar:", err);
-        } finally {
-          if (isMounted) setIsLoadingPopular(false);
         }
-      } else {
-        // Simulate loading for UI consistency if no artistId
-        setTimeout(() => {
-          if (!isMounted) return;
-          setIsLoadingPopular(false);
-        }, 500);
       }
     };
 
@@ -167,17 +191,18 @@ export function NowPlayingSidebar({
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-  // Filter other popular songs by this artist or fall back to first few tracks
-  const localPopularTracks = allTracks
-    .filter(t => t.artist === track.artist && t.id !== track.id)
-    .slice(0, 3);
-
-  const fallbackPopularTracks = localPopularTracks.length > 0 
-    ? localPopularTracks 
-    : allTracks.filter(t => t.id !== track.id).slice(0, 3);
-
-  const displayedPopular = popularFetchedTracks.length > 0 ? popularFetchedTracks : fallbackPopularTracks;
+  
+  const handleScroll = () => {
+    if (queueRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = queueRef.current;
+      // If we are within 200px of the bottom, fetch next
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        if (!isFetchingNextPage) {
+          fetchNextQueueBatch();
+        }
+      }
+    }
+  };
 
   return (
     <div className={`nowplaying-sidebar ${isOpen ? "open" : ""}`}>
@@ -192,8 +217,9 @@ export function NowPlayingSidebar({
         </button>
       </div>
 
-      {/* Scrollable Container */}
-      <div className="nowplaying-scroll-body">
+
+      {/* STICKY TOP CONTAINER */}
+      <div className="nowplaying-sticky-top">
         
         {/* 1. Rotating Vinyl Disk */}
         <div className="nowplaying-disk-section">
@@ -254,7 +280,12 @@ export function NowPlayingSidebar({
 
           {/* Playback Controls Row */}
           <div className="nowplaying-playback-row">
-            <button className="nowplaying-control-btn" title="Shuffle" disabled>
+            {/* Shuffle Button inside NowPlayingSidebar timeline tools */}
+            <button 
+              className={`nowplaying-control-btn ${isShuffleOn ? 'nowplaying-repeat-active' : ''}`} 
+              title="Shuffle"
+              onClick={onToggleShuffle}
+            >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="16 3 21 3 21 8" />
                 <line x1="4" y1="20" x2="21" y2="3" />
@@ -321,23 +352,15 @@ export function NowPlayingSidebar({
           </div>
         </div>
 
-        {/* 4. Utilities Row (Mic, List, Headphones, Mute + Volume, Expand) */}
+        {/* 4. Utilities Row (Lyrics, Fullscreen, Mute + Volume) */}
         <div className="nowplaying-utilities-row">
           <button className="nowplaying-util-btn" title="Lyrics">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9M3 20v-8a2 2 0 0 1 2-2h4M3 12a2 2 0 0 1 2-2h4M13 14V4a2 2 0 0 1 2-2h4" />
+              <path d="m12 8-9.04 9.06a2.82 2.82 0 1 0 3.98 3.98L16 12" />
+              <circle cx="17" cy="7" r="5" />
             </svg>
           </button>
-          <button className="nowplaying-util-btn" title="Lyrics Sync">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <button className="nowplaying-util-btn" title="Connect to device">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3" />
-            </svg>
-          </button>
+          
           <button className="nowplaying-util-btn" title="Fullscreen" onClick={onFullscreenToggle}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
@@ -345,47 +368,103 @@ export function NowPlayingSidebar({
           </button>
 
           {/* Volume scrubber inside sidebar */}
-          <div className="nowplaying-util-btn" style={{ cursor: "default", padding: 0 }} title="Volume">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-            </svg>
-          </div>
-          <div 
-            className="nowplaying-volume-bar-wrapper"
-            onMouseDown={handleVolumeDrag}
-          >
-            <div className="nowplaying-volume-bar-track">
-              <div className="nowplaying-volume-bar-progress" style={{ width: `${volume}%` }}>
-                <div className="nowplaying-volume-bar-handle" />
+          <div className="flex items-center gap-2">
+            <div 
+              className="nowplaying-util-btn" 
+              style={{ padding: '0 4px' }} 
+              title="Volume"
+              onClick={() => {
+                if (volume > 0) {
+                  onVolumeChange(0);
+                } else {
+                  onVolumeChange(70);
+                }
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                {volume > 0 ? (
+                  <>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    {volume > 50 && <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />}
+                  </>
+                ) : (
+                  <>
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </>
+                )}
+              </svg>
+            </div>
+            <div 
+              className="nowplaying-volume-bar-wrapper"
+              onMouseDown={handleVolumeDrag}
+            >
+              <div className="nowplaying-volume-bar-track">
+                <div className="nowplaying-volume-bar-progress" style={{ width: `${volume}%` }}>
+                  <div className="nowplaying-volume-bar-handle" />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 5. Scrollable Area: Popular List */}
-        <div>
-          <p className="nowplaying-section-title">
-            {track.channelName || track.artist} Popular
-          </p>
-          <div className={`nowplaying-popular-list ${isLoadingPopular ? 'loading-opacity' : ''}`}>
-            {displayedPopular.map((item, idx) => (
-              <div 
-                key={item.id} 
-                className="popular-track-row"
-                onClick={() => onTrackSelect(item)}
-              >
-                <span className="popular-track-index">{idx + 1}</span>
-                <img src={item.poster} alt={item.title} className="popular-track-cover" />
-                <div className="popular-track-meta">
-                  <p className="popular-track-title" title={item.title}>{item.title}</p>
-                  <p className="popular-track-plays">{item.views || "2.3M plays"}</p>
+        <p className="nowplaying-section-title" style={{ marginTop: '8px', marginBottom: '0' }}>
+          Up Next
+        </p>
+      </div>
+
+      {/* SCROLLABLE QUEUE CONTAINER */}
+      <div 
+        className="nowplaying-scroll-queue" 
+        ref={queueRef} 
+        data-lenis-prevent="true"
+        onScroll={handleScroll}
+      >
+          <div className="nowplaying-popular-list">
+            {allTracks.length === 0 && (
+              <p className="text-white/40 text-xs text-center py-4">Queue is empty</p>
+            )}
+            {allTracks.map((item, idx) => {
+              const isCurrentlyPlaying = item.id === track?.id;
+              
+              return (
+                <div 
+                  key={`${item.id}-${idx}`} 
+                  className={`popular-track-row ${isCurrentlyPlaying ? 'active-queue-item' : ''}`}
+                  onClick={() => onTrackSelect(item)}
+                >
+                  <span className="popular-track-index">
+                    {isCurrentlyPlaying ? (
+                      <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" className="text-[#F26B50]">
+                        <path d="M8 5.25v13.5a.75.75 0 0 0 1.152.628l11.25-6.75a.75.75 0 0 0 0-1.256L9.152 4.622A.75.75 0 0 0 8 5.25Z" />
+                      </svg>
+                    ) : (
+                      idx + 1
+                    )}
+                  </span>
+                  <img src={item.poster} alt={item.title} className="popular-track-cover" />
+                  <div className="popular-track-meta">
+                    <p className={`popular-track-title ${isCurrentlyPlaying ? 'text-[#F26B50]' : ''}`} title={item.title}>{item.title}</p>
+                    <p className="popular-track-plays">{item.artist}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          
+          {isFetchingNextPage && (
+            <div className="flex justify-center items-center py-4 text-[#F26B50]">
+               <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+               </svg>
+            </div>
+          )}
         </div>
 
+      {/* STICKY BOTTOM CONTAINER */}
+      <div className="nowplaying-sticky-bottom">
         {/* 6. Artist Details Section (Moved to bottom) */}
         {artistDetails && (
           <div 
@@ -423,7 +502,6 @@ export function NowPlayingSidebar({
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

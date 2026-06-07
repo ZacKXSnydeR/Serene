@@ -1,16 +1,83 @@
+mod db;
+
 use serde_json::Value;
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 use tauri_plugin_shell::ShellExt;
+use std::sync::{Arc, Mutex};
+use tauri_plugin_shell::process::CommandEvent;
 
-
+struct ServerPort(Arc<Mutex<Option<u16>>>);
 
 #[tauri::command]
-async fn open_youtube_login(app: tauri::AppHandle) -> Result<(), String> {
+async fn get_server_port(state: tauri::State<'_, ServerPort>) -> Result<u16, String> {
+    // Wait for the sidecar to report the port (timeout after 10s)
+    for _ in 0..100 {
+        if let Some(port) = *state.0.lock().unwrap() {
+            return Ok(port);
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    Err("Python sidecar failed to report port in time".to_string())
+}
+
+#[tauri::command]
+async fn open_youtube_login(app: tauri::AppHandle, state: tauri::State<'_, ServerPort>) -> Result<(), String> {
+    let port = if let Some(p) = *state.0.lock().unwrap() {
+        p
+    } else {
+        return Err("Server port not initialized yet".to_string());
+    };
+    
     let data_dir = app.path().app_data_dir().unwrap().join("ytm_login_profile");
+    
+    let init_script = format!(r#"
+        let checkInterval = setInterval(() => {{
+            if (window.location.href.includes('music.youtube.com') && document.cookie.includes("SAPISID=")) {{
+                clearInterval(checkInterval);
+                setTimeout(() => {{
+                    window.location.href = 'http://127.0.0.1:{}/auth/success_close_window';
+                }}, 1500);
+            }}
+        }}, 1000);
+    "#, port);
+
+    let app_clone = app.clone();
+
     tauri::WebviewWindowBuilder::new(&app, "ytm-login", tauri::WebviewUrl::External("https://music.youtube.com".parse().unwrap()))
         .title("YouTube Music Login")
         .inner_size(800.0, 600.0)
-        .data_directory(data_dir)
+        .incognito(true)
+        .initialization_script(&init_script)
+        .on_navigation(move |url| {
+            if url.as_str().contains("auth/success_close_window") {
+                let app = app_clone.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(w) = app.get_webview_window("ytm-login") {
+                        if let Ok(cookies) = w.cookies_for_url("https://music.youtube.com".parse().unwrap()) {
+                            let cookie_str = cookies.iter()
+                                .map(|c| format!("{}={}", c.name(), c.value()))
+                                .collect::<Vec<_>>()
+                                .join("; ");
+                            println!("Extracted cookies: {}", cookie_str);
+                            
+                            let client = reqwest::Client::new();
+                            let api_url = format!("http://127.0.0.1:{}/auth/cookie", port);
+                            let mut body = serde_json::Map::new();
+                            body.insert("cookie".to_string(), serde_json::Value::String(cookie_str));
+                            let _ = client.post(&api_url).json(&body).send().await;
+                            
+                            let _ = w.close();
+                        } else {
+                            let _ = w.close();
+                        }
+                    }
+                    let _ = app.emit("auth-success", ());
+                });
+                false
+            } else {
+                true
+            }
+        })
         .build()
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -84,13 +151,39 @@ pub fn run() {
                 .expect("Failed to get app data directory");
             std::fs::create_dir_all(&app_dir).ok();
 
+            // Init local database
+            db::init_db(app.handle()).expect("Failed to initialize database");
+
+            // Set up shared port state
+            let port_state = Arc::new(Mutex::new(None));
+            app.manage(ServerPort(port_state.clone()));
+
             // Spawn sidecar
             match app.shell().sidecar("ytmusic_server") {
                 Ok(sidecar_command) => {
-                    if let Err(e) = sidecar_command.spawn() {
-                        eprintln!("Failed to spawn ytmusic_server sidecar: {}", e);
-                    } else {
-                        println!("Successfully spawned ytmusic_server sidecar");
+                    match sidecar_command.spawn() {
+                        Ok((mut rx, _child)) => {
+                            println!("Successfully spawned ytmusic_server sidecar");
+                            tauri::async_runtime::spawn(async move {
+                                while let Some(event) = rx.recv().await {
+                                    if let CommandEvent::Stdout(line_bytes) = event {
+                                        let line = String::from_utf8_lossy(&line_bytes);
+                                        if let Some(port_str) = line.split("SERENE_PORT=").nth(1) {
+                                            if let Ok(port) = port_str.trim().parse::<u16>() {
+                                                println!("Captured Python server port: {}", port);
+                                                *port_state.lock().unwrap() = Some(port);
+                                            }
+                                        }
+                                    } else if let CommandEvent::Stderr(line_bytes) = event {
+                                        let line = String::from_utf8_lossy(&line_bytes);
+                                        eprintln!("Sidecar error: {}", line);
+                                    }
+                                }
+                            });
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to spawn ytmusic_server sidecar: {}", e);
+                        }
                     }
                 }
                 Err(e) => {
@@ -104,9 +197,20 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            admin_rpc,
             fetch_web_data,
-            open_youtube_login
+            open_youtube_login,
+            get_server_port,
+            db::add_local_history,
+            db::get_local_history,
+            db::clear_local_history,
+            db::add_local_liked_song,
+            db::remove_local_liked_song,
+            db::get_local_liked_songs,
+            db::clear_local_liked_songs,
+            db::create_local_playlist,
+            db::add_to_local_playlist,
+            db::get_local_playlists,
+            db::clear_local_playlists
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

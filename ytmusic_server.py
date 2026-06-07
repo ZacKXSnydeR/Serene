@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import urllib.request
+import http.cookiejar
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +12,10 @@ import yt_dlp
 
 app = FastAPI(title="YTMusic Local API", description="Exhaustive API wrapper for ytmusicapi")
 
-# Configure CORS
+# Configure CORS securely for dynamic dev ports and Tauri production origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow Tauri frontend
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|tauri\.localhost)(:[0-9]+)?$|^tauri://localhost$|^https://music\.youtube\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,58 +64,7 @@ def get_home(limit: int = 3, country: str = 'ZZ'):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/auth/harvest")
-def harvest_cookies():
-    app_data = os.environ.get('APPDATA', '')
-    
-    # Dynamically read identifier from tauri config so it doesn't break if renamed
-    try:
-        with open(os.path.join(os.path.dirname(__file__), 'src-tauri', 'tauri.conf.json'), 'r') as f:
-            tauri_conf = json.load(f)
-            identifier = tauri_conf.get('identifier', 'com.serene.app')
-    except Exception:
-        identifier = 'com.serene.app'
-        
-    base_path = os.path.join(app_data, identifier, 'ytm_login_profile', 'EBWebView')
-    
-    cookie_path = os.path.join(base_path, 'Default', 'Network', 'Cookies')
-    key_path = os.path.join(base_path, 'Local State')
-    
-    if not os.path.exists(cookie_path) or not os.path.exists(key_path):
-        raise HTTPException(status_code=400, detail="Tauri WebView2 cookies not found.")
-        
-    try:
-        cj = browser_cookie3.ChromiumBased(browser='Edge', cookie_file=cookie_path, domain_name='.youtube.com', key_file=key_path).load()
-        
-        cookie_string_parts = []
-        for cookie in cj:
-            if cookie.domain.endswith('.youtube.com'):
-                cookie_string_parts.append(f"{cookie.name}={cookie.value}")
-                
-        cookie_str = "; ".join(cookie_string_parts)
-        
-        if not cookie_str:
-            raise HTTPException(status_code=400, detail="No YouTube cookies found. Please log in first.")
-            
-        browser_json = {
-            "cookie": cookie_str
-        }
-        
-        with open(BROWSER_FILE, "w", encoding="utf-8") as f:
-            json.dump(browser_json, f, indent=4)
-            
-        # Also save to cookies.txt for yt-dlp
-        cj_netscape = http.cookiejar.MozillaCookieJar(COOKIES_FILE)
-        for cookie in cj:
-            if cookie.domain.endswith('.youtube.com') or cookie.domain.endswith('.google.com'):
-                cj_netscape.set_cookie(cookie)
-        cj_netscape.save(ignore_discard=True, ignore_expires=True)
-            
-        global yt
-        yt = YTMusic("browser.json")
-        return {"status": "success", "message": "Successfully harvested cookies and initialized YTMusic."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/artist/{channelId}")
 def get_artist(channelId: str):
@@ -204,6 +154,14 @@ def get_song(videoId: str):
     """Get song metadata."""
     try:
         return yt.get_song(videoId)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/watch/{videoId}")
+def get_watch_playlist(videoId: str, playlistId: Optional[str] = None, limit: int = 50):
+    """Get the watch playlist (radio/queue) for a video."""
+    try:
+        return yt.get_watch_playlist(videoId=videoId, playlistId=playlistId, limit=limit)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -374,16 +332,44 @@ class CookieRequest(BaseModel):
 def auth_cookie(req: CookieRequest):
     """Saves browser cookie for auth"""
     try:
-        # Create headers dict expected by ytmusicapi
-        headers = {
+        from ytmusicapi.helpers import sapisid_from_cookie, get_authorization
+        
+        try:
+            sapisid = sapisid_from_cookie(req.cookie)
+        except Exception:
+            sapisid = ""
+
+        origin = "https://music.youtube.com"
+        auth_header = get_authorization(sapisid + " " + origin) if sapisid else ""
+
+        browser_json = {
             "accept": "*/*",
             "accept-language": "en-US,en;q=0.9",
             "content-type": "application/json",
             "cookie": req.cookie,
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "x-goog-authuser": "0",
+            "origin": origin
         }
-        with open(BROWSER_FILE, "w") as f:
-            json.dump(headers, f)
+        
+        if auth_header:
+            browser_json["authorization"] = auth_header
+
+        with open(BROWSER_FILE, "w", encoding="utf-8") as f:
+            json.dump(browser_json, f, indent=4)
+            
+        # Explicitly write cookies.txt in Netscape format for yt-dlp
+        with open(COOKIES_FILE, "w", encoding="utf-8") as f:
+            f.write("# Netscape HTTP Cookie File\n")
+            f.write("# http://curl.haxx.se/rfc/cookie_spec.html\n")
+            f.write("# This is a generated file!  Do not edit.\n\n")
+            
+            for part in req.cookie.split(";"):
+                part = part.strip()
+                if "=" in part:
+                    name, value = part.split("=", 1)
+                    # format: domain, include_subdomains, path, secure, expiration, name, value
+                    f.write(f".youtube.com\tTRUE\t/\tTRUE\t2145916800\t{name}\t{value}\n")
             
         global yt
         yt = get_ytmusic()
@@ -415,8 +401,10 @@ def get_history():
     """Gets play history."""
     try:
         if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
-            return []
+            raise HTTPException(status_code=401, detail="Not authenticated")
         return yt.get_history()
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -427,11 +415,13 @@ class HistoryItem(BaseModel):
 def add_history_item(item: HistoryItem):
     try:
         if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
-            return {"status": "skipped", "reason": "Not authenticated"}
+            raise HTTPException(status_code=401, detail="Not authenticated")
             
         # ytmusicapi requires the full song dict (which contains trackingUrl) to add to history
         song_dict = yt.get_song(item.song)
         return yt.add_history_item(song_dict)
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -439,8 +429,10 @@ def add_history_item(item: HistoryItem):
 def get_liked_songs(limit: int = 100):
     try:
         if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
-            return {"tracks": []}
+            raise HTTPException(status_code=401, detail="Not authenticated")
         return yt.get_liked_songs(limit)
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -448,30 +440,38 @@ def get_liked_songs(limit: int = 100):
 def get_library_playlists(limit: int = 25):
     try:
         if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
-            return []
+            raise HTTPException(status_code=401, detail="Not authenticated")
         return yt.get_library_playlists(limit)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 class CreatePlaylistRequest(BaseModel):
     title: str
-    description: str = ""
+    description: Optional[str] = ""
     privacy_status: str = "PRIVATE"
     video_ids: List[str] = []
 
 @app.post("/library/playlists/create")
 def create_playlist(req: CreatePlaylistRequest):
     try:
-        playlist_id = yt.create_playlist(req.title, req.description, req.privacy_status, req.video_ids)
+        if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        playlist_id = yt.create_playlist(req.title, req.description or "", req.privacy_status, req.video_ids)
         return {"success": True, "playlistId": playlist_id}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/library/playlists/{playlistId}")
 def delete_playlist(playlistId: str):
     try:
+        if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
+            raise HTTPException(status_code=401, detail="Not authenticated")
         status = yt.delete_playlist(playlistId)
         return {"success": True, "status": status}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -482,8 +482,12 @@ class AddToPlaylistRequest(BaseModel):
 @app.post("/library/playlists/add")
 def add_to_playlist(req: AddToPlaylistRequest):
     try:
+        if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
+            raise HTTPException(status_code=401, detail="Not authenticated")
         status = yt.add_playlist_items(req.playlistId, req.videoIds)
         return {"success": True, "status": status}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -495,7 +499,11 @@ class RateRequest(BaseModel):
 @app.post("/rate")
 def rate_song(req: RateRequest):
     try:
+        if not (os.path.exists(OAUTH_FILE) or os.path.exists(BROWSER_FILE)):
+            raise HTTPException(status_code=401, detail="Not authenticated")
         return yt.rate_song(req.videoId, req.rating)
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -551,7 +559,20 @@ def search_youtube(query: str):
 
 if __name__ == "__main__":
     import multiprocessing
+    import socket
     multiprocessing.freeze_support()
     import uvicorn
-    # Run the server locally on port 5050
-    uvicorn.run(app, host="127.0.0.1", port=5050)
+    
+    # Find a free port dynamically
+    def get_free_port():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', 0))
+            return s.getsockname()[1]
+            
+    port = get_free_port()
+    # Print the marker so the Tauri sidecar listener can extract it
+    print(f"SERENE_PORT={port}", flush=True)
+    
+    # Run the server locally on the dynamically assigned port
+    uvicorn.run(app, host="127.0.0.1", port=port)
+

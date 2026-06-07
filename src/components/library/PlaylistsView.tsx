@@ -3,6 +3,7 @@ import "./libraryviews.css";
 import "../artist/artistpage.css";
 import { CreatePlaylistModal } from "./CreatePlaylistModal";
 import { getPosterUrl } from "../../utils/imageUtils";
+import { getBaseUrl } from "../../api/client";
 
 export function PlaylistsView({ onPlaylistSelect }: any) {
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -16,7 +17,7 @@ export function PlaylistsView({ onPlaylistSelect }: any) {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:5050/library/playlists?limit=50`);
+      const res = await fetch(`${getBaseUrl()}/library/playlists?limit=50`);
       if (!res.ok) throw new Error("Failed to fetch playlists.");
       const data = await res.json();
       
@@ -36,7 +37,7 @@ export function PlaylistsView({ onPlaylistSelect }: any) {
     if (!playlistToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`http://127.0.0.1:5050/library/playlists/${playlistToDelete.id}`, {
+      const res = await fetch(`${getBaseUrl()}/library/playlists/${playlistToDelete.id}`, {
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Failed to delete playlist.");

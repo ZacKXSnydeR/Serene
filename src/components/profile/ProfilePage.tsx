@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./profilepage.css";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getPosterUrl } from "../../utils/imageUtils";
+import { getBaseUrl } from "../../api/client";
 
 export const ProfilePage: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,12 +17,27 @@ export const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    const unlistenAuth = listen("auth-success", async () => {
+      setAuthMessage("Authentication successful! Loading profile...");
+      await checkAuthStatus();
+      window.dispatchEvent(new Event("auth-changed"));
+      
+      // Trigger native DB sync to YouTube
+      import('../../store/useLibraryStore').then(module => {
+          module.useLibraryStore.getState().syncLocalDataToYouTube();
+      });
+    });
+
+    return () => {
+      unlistenAuth.then(f => f());
+    };
   }, []);
 
   const checkAuthStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:5050/auth/status");
+      const res = await fetch(`${getBaseUrl()}/auth/status`);
       const data = await res.json();
       setIsAuthenticated(data.authenticated);
       if (data.authenticated) {
@@ -35,7 +52,7 @@ export const ProfilePage: React.FC = () => {
 
   const fetchAccount = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5050/account");
+      const res = await fetch(`${getBaseUrl()}/account`);
       const data = await res.json();
       setAccount(data);
     } catch (err) {
@@ -55,31 +72,10 @@ export const ProfilePage: React.FC = () => {
     setAuthMessage("Opening YouTube Music login window...");
     try {
       await invoke("open_youtube_login");
-      setAuthMessage("Once you've logged in, close the window and click 'Sync Login'.");
+      setAuthMessage("Please log in. This window will close automatically once successful.");
     } catch (err: any) {
       setAuthError("Failed to open login window: " + String(err));
       setAuthMessage("");
-    }
-  };
-
-  const syncLogin = async () => {
-    setAuthError("");
-    setAuthMessage("Syncing cookies natively...");
-    setLoading(true);
-    try {
-      const res = await fetch("http://127.0.0.1:5050/auth/harvest", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to sync cookies.");
-      }
-      setAuthMessage("Successfully synced! Loading your profile...");
-      await checkAuthStatus();
-      window.dispatchEvent(new Event("auth-changed"));
-    } catch (err: any) {
-      setAuthError(err.message);
-      setAuthMessage("");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -87,7 +83,7 @@ export const ProfilePage: React.FC = () => {
     try {
       // In a native app, logout might also mean clearing the webview cookies, 
       // but for now we just clear the browser.json backend side.
-      await fetch("http://127.0.0.1:5050/auth/logout", { method: "POST" });
+      await fetch(`${getBaseUrl()}/auth/logout`, { method: "POST" });
       setIsAuthenticated(false);
       setAccount(null);
       window.dispatchEvent(new Event("auth-changed"));
@@ -99,7 +95,6 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="profile-page-container">
       <div className="profile-glass-panel">
-        
         <h1 className="profile-title">Settings & Profile</h1>
 
         {loading && <div className="profile-loading">Loading...</div>}
@@ -107,19 +102,11 @@ export const ProfilePage: React.FC = () => {
         {!loading && !isAuthenticated && (
           <div className="auth-section">
             <h2 className="auth-subtitle">Connect to YouTube Music</h2>
-            <p className="auth-desc">Log in natively through the official YouTube interface to seamlessly sync your library, playlists, and history.</p>
+            <p className="auth-desc">Log in to seamlessly sync your library, playlists, and history natively.</p>
             
             <div className="auth-native-container">
               <button className="auth-submit-btn native-login-btn" onClick={openYouTubeLogin}>
-                Log In with YouTube
-              </button>
-              
-              <div className="auth-step-divider">
-                <span>Then</span>
-              </div>
-              
-              <button className="auth-submit-btn sync-login-btn" onClick={syncLogin}>
-                Sync Login
+                Log In to Sync Automatically
               </button>
             </div>
             

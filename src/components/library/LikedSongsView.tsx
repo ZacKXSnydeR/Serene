@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TrackGrid } from "../home/TrackGrid";
 import { getPosterUrl } from "../../utils/imageUtils";
+import { getBaseUrl } from "../../api/client";
 
 export function LikedSongsView({ onTrackSelect, currentTrackId, isPlaying, onArtistClick }: any) {
   const [tracks, setTracks] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export function LikedSongsView({ onTrackSelect, currentTrackId, isPlaying, onArt
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:5050/library/liked?limit=${currentLimit}`);
+      const res = await fetch(`${getBaseUrl()}/library/liked?limit=${currentLimit}`);
       if (!res.ok) throw new Error("Failed to fetch liked songs. Are you authenticated?");
       const data = await res.json();
       

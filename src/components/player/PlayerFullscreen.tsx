@@ -16,6 +16,8 @@ interface PlayerFullscreenProps {
   onRepeatToggle: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  isShuffleOn?: boolean;
+  onToggleShuffle?: () => void;
 }
 
 export function PlayerFullscreen({
@@ -32,7 +34,9 @@ export function PlayerFullscreen({
   repeatMode,
   onRepeatToggle,
   onNext,
-  onPrevious
+  onPrevious,
+  isShuffleOn,
+  onToggleShuffle
 }: PlayerFullscreenProps) {
 
   if (!track) return null;
@@ -164,7 +168,11 @@ export function PlayerFullscreen({
 
                 {/* Audio Controls Row */}
                 <div className="fs-controls-row">
-                  <button className="fs-control-btn" title="Shuffle" disabled>
+                  <button 
+                    className={`fs-control-btn ${isShuffleOn ? 'fs-repeat-active' : ''}`} 
+                    title="Shuffle" 
+                    onClick={onToggleShuffle}
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="16 3 21 3 21 8" />
                       <line x1="4" y1="20" x2="21" y2="3" />
@@ -222,10 +230,33 @@ export function PlayerFullscreen({
 
                 {/* Volume Control Slider */}
                 <div className="fs-volume-container">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                  </svg>
+                  <button 
+                    className="fs-control-btn" 
+                    title="Mute"
+                    onClick={() => {
+                      if (volume > 0) {
+                        onVolumeChange(0);
+                      } else {
+                        onVolumeChange(70);
+                      }
+                    }}
+                    style={{ padding: 0 }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      {volume === 0 ? (
+                        <>
+                          <line x1="23" y1="9" x2="17" y2="15" />
+                          <line x1="17" y1="9" x2="23" y2="15" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                          {volume > 50 && <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />}
+                        </>
+                      )}
+                    </svg>
+                  </button>
                   <div className="fs-volume-slider-wrapper" onMouseDown={handleVolumeDrag}>
                     <div className="fs-volume-slider-track">
                       <div className="fs-volume-slider-progress" style={{ width: `${volume}%` }}>

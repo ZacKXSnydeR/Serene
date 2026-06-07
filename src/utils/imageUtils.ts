@@ -106,21 +106,38 @@ function deepGet(obj: any, path: string): any {
  * receive a guaranteed-valid image URL.
  */
 export function resolveImageUrl(item: any, options?: ResolveOptions): string {
-  if (!item) return options?.fallbackUrl || DEFAULT_PLACEHOLDER;
+  if (!item) {
+    // console.debug("[ImageUtils] resolveImageUrl called with null/undefined item.");
+    return options?.fallbackUrl || DEFAULT_PLACEHOLDER;
+  }
 
   const targetSize = options?.targetSize ?? "highest";
   const keepRelative = options?.keepProtocolRelative ?? false;
+
+  // Helper to log invalid URLs that were found but rejected
+  const logInvalid = (strategy: string, url: string) => {
+    console.warn(`[ImageUtils] ${strategy} found an invalid URL: "${url}"`, item);
+  };
 
   // ═══ Strategy 1: Pre-resolved poster field (used by our own mappers) ═══
   if (typeof item.poster === "string" && item.poster.trim()) {
     const url = sanitizeUrl(item.poster, keepRelative);
     if (isValidUrl(url)) return url;
+    logInvalid("Strategy 1 (poster)", url);
   }
 
   // ═══ Strategy 2: Direct thumbnails array (most common) ═══
   if (item.thumbnails && Array.isArray(item.thumbnails) && item.thumbnails.length > 0) {
     const url = extractFromThumbnails(item.thumbnails, targetSize);
     if (isValidUrl(url)) return url;
+    logInvalid("Strategy 2 (thumbnails array)", url);
+  }
+
+  // ═══ Strategy 2.5: Singular thumbnail array (watch playlists) ═══
+  if (item.thumbnail && Array.isArray(item.thumbnail) && item.thumbnail.length > 0) {
+    const url = extractFromThumbnails(item.thumbnail, targetSize);
+    if (isValidUrl(url)) return url;
+    logInvalid("Strategy 2.5 (singular thumbnail array)", url);
   }
 
   // ═══ Strategy 3: Common nested thumbnail paths in YT responses ═══
@@ -145,6 +162,7 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
     if (found && Array.isArray(found) && found.length > 0) {
       const url = extractFromThumbnails(found, targetSize);
       if (isValidUrl(url)) return url;
+      logInvalid(`Strategy 3 (nested path: ${path})`, url);
     }
   }
 
@@ -152,6 +170,7 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
   if (item.sources && Array.isArray(item.sources) && item.sources.length > 0) {
     const url = extractFromThumbnails(item.sources, targetSize);
     if (isValidUrl(url)) return url;
+    logInvalid("Strategy 4 (sources array)", url);
   }
   // Nested sources paths
   const nestedSourcesPaths = [
@@ -164,6 +183,7 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
     if (found && Array.isArray(found) && found.length > 0) {
       const url = extractFromThumbnails(found, targetSize);
       if (isValidUrl(url)) return url;
+      logInvalid(`Strategy 4.5 (nested sources path: ${path})`, url);
     }
   }
 
@@ -173,6 +193,7 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
     if (typeof item[field] === "string" && item[field].trim()) {
       const url = sanitizeUrl(item[field], keepRelative);
       if (isValidUrl(url)) return url;
+      logInvalid(`Strategy 5 (string field: ${field})`, url);
     }
   }
 
@@ -182,6 +203,7 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
     if (item[field] && typeof item[field] === "object" && typeof item[field].url === "string") {
       const url = sanitizeUrl(item[field].url, keepRelative);
       if (isValidUrl(url)) return url;
+      logInvalid(`Strategy 6 (object wrapper: ${field}.url)`, url);
     }
   }
 
@@ -238,6 +260,9 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
   if (anyUrl) return anyUrl;
 
   // ═══ FINAL GUARANTEED SAFE FALLBACK ═══
+  if (item && Object.keys(item).length > 0) {
+    console.error(`[ImageUtils] CRITICAL: Exhausted all strategies! Failed to resolve ANY image URL for this item. Falling back to placeholder.`, item);
+  }
   return options?.fallbackUrl || DEFAULT_PLACEHOLDER;
 }
 

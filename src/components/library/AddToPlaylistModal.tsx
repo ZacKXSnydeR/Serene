@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import "./createplaylistmodal.css";
+import { getBaseUrl } from "../../api/client";
+
+import { invoke } from "@tauri-apps/api/core";
+import { getPosterUrl, getHighResImage } from "../../utils/imageUtils";
 
 interface AddToPlaylistModalProps {
   isOpen: boolean;
   onClose: () => void;
-  videoId: string | null;
+  track: any | null;
 }
 
-export function AddToPlaylistModal({ isOpen, onClose, videoId }: AddToPlaylistModalProps) {
+export function AddToPlaylistModal({ isOpen, onClose, track }: AddToPlaylistModalProps) {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -15,6 +19,7 @@ export function AddToPlaylistModal({ isOpen, onClose, videoId }: AddToPlaylistMo
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,14 +32,27 @@ export function AddToPlaylistModal({ isOpen, onClose, videoId }: AddToPlaylistMo
 
   const fetchPlaylists = async () => {
     setIsLoading(true);
+    setIsLocalMode(false);
     try {
-      const res = await fetch("http://127.0.0.1:5050/library/playlists?limit=50");
+      const res = await fetch(`${getBaseUrl()}/library/playlists?limit=50`);
       if (!res.ok) throw new Error("Failed to fetch playlists.");
       const data = await res.json();
       // Filter out only "Liked Music" (LM) because it's an auto playlist
       setPlaylists(data.filter((p: any) => p.playlistId !== "LM"));
     } catch (err: any) {
-      setError("Could not load playlists.");
+      setIsLocalMode(true);
+      try {
+        const localPlaylists = await invoke<any[]>('get_local_playlists');
+        const mapped = localPlaylists.map(pl => ({
+          playlistId: pl.id,
+          title: pl.title,
+          description: pl.description,
+          count: pl.tracks.length
+        }));
+        setPlaylists(mapped);
+      } catch (localErr) {
+        setError("Could not load local playlists.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -49,25 +67,40 @@ export function AddToPlaylistModal({ isOpen, onClose, videoId }: AddToPlaylistMo
   };
 
   const handleAddMultiple = async () => {
-    if (!videoId || selectedPlaylists.length === 0) return;
+    if (!track || selectedPlaylists.length === 0) return;
+    const videoId = track.id || track.videoId;
+    if (!videoId) return;
+
     setIsAdding(true);
     setError(null);
     try {
-      await Promise.all(selectedPlaylists.map(playlistId => 
-        fetch("http://127.0.0.1:5050/library/playlists/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playlistId, videoIds: [videoId] })
-        }).then(async (res) => {
-          if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.detail || "Failed to add to playlist.");
-          }
-        })
-      ));
+      if (isLocalMode) {
+        const localTrack = {
+          video_id: videoId,
+          title: track.title || "Unknown Title",
+          artist: track.artist || "Unknown Artist",
+          poster: getPosterUrl(track) || getHighResImage(track.poster) || ""
+        };
+        await Promise.all(selectedPlaylists.map(playlistId => 
+          invoke('add_to_local_playlist', { playlistId, tracks: [localTrack] })
+        ));
+      } else {
+        await Promise.all(selectedPlaylists.map(playlistId => 
+          fetch(`${getBaseUrl()}/library/playlists/add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playlistId, videoIds: [videoId] })
+          }).then(async (res) => {
+            if (!res.ok) {
+              const data = await res.json();
+              throw new Error(data.detail || "Failed to add to playlist.");
+            }
+          })
+        ));
+      }
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to add track");
     } finally {
       setIsAdding(false);
     }
@@ -78,27 +111,37 @@ export function AddToPlaylistModal({ isOpen, onClose, videoId }: AddToPlaylistMo
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://127.0.0.1:5050/library/playlists/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let createdPlaylistId = "";
+      if (isLocalMode) {
+        createdPlaylistId = await invoke('create_local_playlist', {
           title: newPlaylistName,
           description: "",
-          privacy_status: "PRIVATE",
-          videoIds: []
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create playlist");
-      const data = await res.json();
+          privacyStatus: "PRIVATE"
+        });
+      } else {
+        const res = await fetch(`${getBaseUrl()}/library/playlists/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: newPlaylistName,
+            description: "",
+            privacy_status: "PRIVATE",
+            videoIds: []
+          })
+        });
+        if (!res.ok) throw new Error("Failed to create playlist");
+        const data = await res.json();
+        createdPlaylistId = data.playlistId;
+      }
       
       // Select the newly created playlist automatically
       await fetchPlaylists();
-      setSelectedPlaylists(prev => [...prev, data.playlistId]);
+      setSelectedPlaylists(prev => [...prev, createdPlaylistId]);
       
       setIsCreatingNew(false);
       setNewPlaylistName("");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to create playlist");
     } finally {
       setIsLoading(false);
     }

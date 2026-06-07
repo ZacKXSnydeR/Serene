@@ -7,10 +7,42 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
 dist
 dist-ssr
 *.local
+
+# Tauri
+src-tauri/target/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+ytmusic_server.spec
+*.spec
 
 # Editor directories and files
 .vscode/*
@@ -24,6 +56,3 @@ dist-ssr
 *.sw?
 
 SUMMARY.md
-build/
-venv/
-*.spec

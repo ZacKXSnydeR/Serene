@@ -15,7 +15,7 @@ interface TrackGridProps {
 
 export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, isLoading, title, onArtistClick }: TrackGridProps) {
   const sectionTitle = title || "Today's Hits";
-  const [addingToPlaylistVideoId, setAddingToPlaylistVideoId] = useState<string | null>(null);
+  const [addingToPlaylistTrack, setAddingToPlaylistTrack] = useState<any | null>(null);
 
   // If loading, render the pulsing dark shimmer skeletons!
   if (isLoading) {
@@ -100,7 +100,7 @@ export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, is
                   className="track-card-add-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setAddingToPlaylistVideoId(track.id || track.videoId);
+                    setAddingToPlaylistTrack(track);
                   }}
                   title="Add to Playlist"
                 >
@@ -132,9 +132,9 @@ export function TrackGrid({ tracks, onTrackSelect, currentTrackId, isPlaying, is
       </div>
 
       <AddToPlaylistModal 
-        isOpen={addingToPlaylistVideoId !== null}
-        onClose={() => setAddingToPlaylistVideoId(null)}
-        videoId={addingToPlaylistVideoId}
+        isOpen={addingToPlaylistTrack !== null}
+        onClose={() => setAddingToPlaylistTrack(null)}
+        track={addingToPlaylistTrack}
       />
     </div>
   );

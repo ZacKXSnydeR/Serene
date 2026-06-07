@@ -1,8 +1,8 @@
 # Serene
 
-A highly-optimized, native desktop client for YouTube Music built with Tauri, React, and Python.
+A blazing-fast, open-source, and fully independent music streaming platform built with Tauri, React, and Python.
 
-Serene bridges the gap between local library management and cloud streaming, offering a fluid, offline-first experience wrapped in a modern, vanilla CSS-driven interface.
+Serene is a complete desktop music ecosystem that leverages the world's largest audio libraries without the bloat of web wrappers or premium paywalls. It delivers a native, offline-first experience wrapped in a breathtaking, custom-crafted interface.
 
 ## Features
 

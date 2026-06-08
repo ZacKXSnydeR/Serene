@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { useStreamUrl, useAddHistory } from '../../api/queries';
+import { invoke } from '@tauri-apps/api/core';
 
 export const AudioProvider: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -148,6 +149,21 @@ export const AudioProvider: React.FC = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [currentTrack]);
+
+  // Discord Rich Presence Sync
+  useEffect(() => {
+    if (isPlaying && currentTrack) {
+      invoke('set_discord_presence', {
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: currentTrack.album || currentTrack.title,
+        elapsed: Math.floor(audioRef.current?.currentTime || 0),
+        posterUrl: currentTrack.poster || null
+      }).catch(console.error);
+    } else {
+      invoke('clear_discord_presence').catch(console.error);
+    }
+  }, [isPlaying, currentTrack?.id]);
 
   return (
     <audio

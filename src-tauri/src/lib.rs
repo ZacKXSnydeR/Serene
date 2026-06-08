@@ -111,7 +111,6 @@ fn set_discord_presence(
     state: tauri::State<'_, DiscordState>,
     title: String,
     artist: String,
-    album: String,
     elapsed: i64
 ) {
     let mut client_opt = state.0.lock().unwrap();

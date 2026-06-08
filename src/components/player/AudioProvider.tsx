@@ -157,17 +157,11 @@ export const AudioProvider: React.FC = () => {
   // Discord Rich Presence Sync
   useEffect(() => {
     if (isPlaying && currentTrack && discordRpcEnabled) {
-      let displayAlbum = currentTrack.album;
-      if (!displayAlbum || displayAlbum === "Unknown Album") {
-        displayAlbum = currentTrack.title;
-      }
-
       const cleanTitle = cleanTrackTitle(currentTrack.title);
 
       invoke('set_discord_presence', {
         title: cleanTitle,
         artist: currentTrack.artist,
-        album: displayAlbum,
         elapsed: Math.floor(audioRef.current?.currentTime || 0)
       }).catch(console.error);
     } else {

@@ -4,6 +4,7 @@ import { useLibraryStore } from '../../store/useLibraryStore';
 import { useStreamUrl, useAddHistory } from '../../api/queries';
 import { invoke } from '@tauri-apps/api/core';
 import { useUIStore } from '../../store/useUIStore';
+import { cleanTrackTitle } from '../../utils/textUtils';
 
 export const AudioProvider: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -161,8 +162,10 @@ export const AudioProvider: React.FC = () => {
         displayAlbum = currentTrack.title;
       }
 
+      const cleanTitle = cleanTrackTitle(currentTrack.title);
+
       invoke('set_discord_presence', {
-        title: currentTrack.title,
+        title: cleanTitle,
         artist: currentTrack.artist,
         album: displayAlbum,
         elapsed: Math.floor(audioRef.current?.currentTime || 0)

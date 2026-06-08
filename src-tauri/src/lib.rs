@@ -135,7 +135,6 @@ fn set_discord_presence(
             .timestamps(activity::Timestamps::new().start(start_time));
         
         let assets = activity::Assets::new()
-            .large_text(album.as_str())
             .large_image("serene_logo");
         
         // Small image for app icon (optional, we'll leave it empty to keep focus on album art)

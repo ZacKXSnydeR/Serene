@@ -8,7 +8,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col p-6 animate-fade-in relative z-10 text-white">
       <div className="flex items-center gap-4 mb-8 sticky top-0 bg-transparent py-4 z-20">
-        <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+        <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 leading-normal pb-1">
           Settings
         </h1>
       </div>
@@ -24,7 +24,7 @@ export const SettingsPage: React.FC = () => {
           </div>
           <button
             onClick={() => setDiscordRpcEnabled(!discordRpcEnabled)}
-            className={`relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none ${
+            className={`relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none cursor-pointer ${
               discordRpcEnabled ? "bg-[#F26B50]" : "bg-white/10"
             }`}
           >

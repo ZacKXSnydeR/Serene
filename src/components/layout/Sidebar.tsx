@@ -57,7 +57,7 @@ export function Sidebar({ isOpen, onClose, activeNav, setActiveNav, isPinned, on
       {/* Logo inside Sidebar Header - Matches height h-13 (52px) */}
       <div className="sidebar-logo-container">
         <img
-          src="/SerenLogo.png"
+          src="/sereneLogo.png"
           className="sidebar-logo-img select-none pointer-events-none"
           alt="Serene Logo"
         />

@@ -112,7 +112,7 @@ export const RootLayout: React.FC = () => {
         style={{ backgroundColor: "#070707" }}
       >
         <div className={`absolute top-6 left-6 z-40 select-none pointer-events-none ${isFullscreenOpen ? 'opacity-0' : 'opacity-100'}`}>
-          <img src="/SerenLogo.png" className="h-13 w-auto object-contain" alt="Serene Logo" />
+          <img src="/sereneLogo.png" className="h-13 w-auto object-contain" alt="Serene Logo" />
         </div>
 
         <div 

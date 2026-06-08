@@ -131,6 +131,7 @@ fn set_discord_presence(
         let mut payload = activity::Activity::new()
             .state(artist.as_str())
             .details(title.as_str())
+            .activity_type(activity::ActivityType::Listening)
             .timestamps(activity::Timestamps::new().start(start_time));
         
         let mut assets = activity::Assets::new()

@@ -4,6 +4,8 @@
  * DO NOT access thumbnails manually in components — always use these utilities.
  */
 
+import { getBaseUrl } from '../api/client';
+
 // Transparent dark placeholder to prevent broken image icons & layout shift
 const DEFAULT_PLACEHOLDER =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='100%25' height='100%25' fill='%23141414'/%3E%3C/svg%3E";
@@ -267,11 +269,19 @@ export function resolveImageUrl(item: any, options?: ResolveOptions): string {
 }
 
 /**
+ * Wraps an image URL in our local Python proxy to bypass CDN origin/referer blocks.
+ */
+function applyProxy(url: string): string {
+  if (!url || url === DEFAULT_PLACEHOLDER || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  return `${getBaseUrl()}/proxy/image?url=${encodeURIComponent(url)}`;
+}
+
+/**
  * Legacy wrapper — identical to resolveImageUrl with highest resolution.
  * Use this when you just need "the best image available".
  */
 export const getPosterUrl = (item: any): string => {
-  return resolveImageUrl(item, { targetSize: "highest" });
+  return applyProxy(resolveImageUrl(item, { targetSize: "highest" }));
 };
 
 /**
@@ -281,7 +291,7 @@ export const getPosterUrl = (item: any): string => {
 export const getHighResImage = (url: string | undefined): string => {
   const resolved = sanitizeUrl(url);
   if (!resolved) return DEFAULT_PLACEHOLDER;
-  if (isValidUrl(resolved)) return resolved;
+  if (isValidUrl(resolved)) return applyProxy(resolved);
   return DEFAULT_PLACEHOLDER;
 };
 
@@ -289,7 +299,7 @@ export const getHighResImage = (url: string | undefined): string => {
  * Get a specific target width (e.g. 64 for small avatars, 512 for covers).
  */
 export const resolveImageTarget = (item: any, targetPx: number): string => {
-  return resolveImageUrl(item, { targetSize: targetPx });
+  return applyProxy(resolveImageUrl(item, { targetSize: targetPx }));
 };
 
 /**

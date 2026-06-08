@@ -4,7 +4,7 @@ import json
 import urllib.request
 import http.cookiejar
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi import FastAPI, HTTPException, Query, Body, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ytmusicapi import YTMusic
@@ -48,6 +48,25 @@ def get_ytmusic():
     return YTMusic(requests_session=session)
 
 yt = get_ytmusic()
+
+# ==========================================
+# 0. Proxy Endpoints
+# ==========================================
+
+@app.get("/proxy/image")
+def proxy_image(url: str = Query(..., description="The original image URL to proxy")):
+    """Proxies an image request via curl_cffi to bypass CDN restrictions and CORS."""
+    try:
+        from curl_cffi import requests
+        # Fetch the image perfectly mimicking Chrome to bypass CDN blocks
+        res = requests.get(url, impersonate="chrome110")
+        if res.status_code == 200:
+            content_type = res.headers.get("Content-Type", "image/jpeg")
+            return Response(content=res.content, media_type=content_type)
+        else:
+            raise HTTPException(status_code=res.status_code, detail="Image fetch failed upstream")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ==========================================
 # 1. Browsing & Music Data

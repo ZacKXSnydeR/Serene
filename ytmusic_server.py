@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ytmusicapi import YTMusic
 import yt_dlp
+import curl_cffi
 
 app = FastAPI(title="YTMusic Local API", description="Exhaustive API wrapper for ytmusicapi")
 
@@ -31,17 +32,20 @@ COOKIES_FILE = os.path.join(APP_DIR, "cookies.txt")
 
 # Initialize YTMusic
 def get_ytmusic():
+    from curl_cffi import requests
+    session = requests.Session(impersonate="chrome110")
+    
     if os.path.exists(OAUTH_FILE):
         try:
-            return YTMusic(OAUTH_FILE)
+            return YTMusic(OAUTH_FILE, requests_session=session)
         except Exception as e:
             print(f"Error initializing YTMusic with oauth.json: {e}")
     if os.path.exists(BROWSER_FILE):
         try:
-            return YTMusic(BROWSER_FILE)
+            return YTMusic(BROWSER_FILE, requests_session=session)
         except Exception as e:
             print(f"Error initializing YTMusic with browser.json: {e}")
-    return YTMusic()
+    return YTMusic(requests_session=session)
 
 yt = get_ytmusic()
 
@@ -59,7 +63,9 @@ def get_home(limit: int = 3, country: str = 'ZZ'):
             return yt.get_home(limit=limit)
         else:
             loc = country if country != 'ZZ' else None
-            local_yt = YTMusic(location=loc)
+            from curl_cffi import requests
+            session = requests.Session(impersonate="chrome110")
+            local_yt = YTMusic(location=loc, requests_session=session)
             return local_yt.get_home(limit=limit)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

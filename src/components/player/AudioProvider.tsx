@@ -153,12 +153,23 @@ export const AudioProvider: React.FC = () => {
   // Discord Rich Presence Sync
   useEffect(() => {
     if (isPlaying && currentTrack) {
+      let displayAlbum = currentTrack.album;
+      if (!displayAlbum || displayAlbum === "YT Music" || displayAlbum === "YouTube") {
+        displayAlbum = currentTrack.title;
+      }
+
+      let poster = currentTrack.poster || null;
+      // Discord requires image URLs to have a valid image extension to render properly
+      if (poster && !poster.includes('.jpg') && !poster.includes('.png')) {
+        poster += '?.jpg';
+      }
+
       invoke('set_discord_presence', {
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: currentTrack.album || currentTrack.title,
+        album: displayAlbum,
         elapsed: Math.floor(audioRef.current?.currentTime || 0),
-        posterUrl: currentTrack.poster || null
+        posterUrl: poster
       }).catch(console.error);
     } else {
       invoke('clear_discord_presence').catch(console.error);

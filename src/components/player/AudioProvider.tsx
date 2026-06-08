@@ -154,7 +154,7 @@ export const AudioProvider: React.FC = () => {
   useEffect(() => {
     if (isPlaying && currentTrack) {
       let displayAlbum = currentTrack.album;
-      if (!displayAlbum || displayAlbum === "YT Music" || displayAlbum === "YouTube") {
+      if (!displayAlbum || displayAlbum === "Unknown Album") {
         displayAlbum = currentTrack.title;
       }
 

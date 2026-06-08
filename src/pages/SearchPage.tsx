@@ -44,7 +44,7 @@ export const SearchPage: React.FC = () => {
             title: item.title,
             artist: item.artists?.[0]?.name || "Unknown",
             artistId: item.artists?.[0]?.id,
-            album: item.album?.name || (item.resultType === "video" ? "YouTube" : "YT Music"),
+            album: item.album?.name || "Unknown Album",
             poster: getPosterUrl(item),
             previewUrl: "",
             source: "youtube"

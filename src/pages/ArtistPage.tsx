@@ -50,7 +50,7 @@ export const ArtistPage: React.FC = () => {
     title: item.title,
     artist: item.artists?.[0]?.name || item.uploader || artist.name,
     artistId: item.artists?.[0]?.id || item.uploader_id || id,
-    album: "YT Music",
+    album: "Unknown Album",
     poster: getPosterUrl(item),
     previewUrl: "",
     source: "youtube",

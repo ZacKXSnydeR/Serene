@@ -600,7 +600,7 @@ def search_youtube(query: str):
                         "title": title,
                         "artist": author_name,
                         "artistId": author_id,
-                        "album": "YouTube",
+                        "album": "Unknown Album",
                         "poster": poster,
                         "source": "youtube"
                     })

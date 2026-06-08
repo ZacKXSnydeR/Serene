@@ -126,7 +126,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           title: item.title,
           artist: item.artists?.[0]?.name || "Unknown Artist",
           artistId: item.artists?.[0]?.id,
-          album: item.album?.name || "YT Music",
+          album: item.album?.name || "Unknown Album",
           poster: getPosterUrl(item),
           source: "youtube"
         }));
@@ -157,7 +157,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           title: item.title,
           artist: item.artists?.[0]?.name || "Unknown Artist",
           artistId: item.artists?.[0]?.id,
-          album: item.album?.name || "YT Music",
+          album: item.album?.name || "Unknown Album",
           poster: getPosterUrl(item),
           source: "youtube"
         }));

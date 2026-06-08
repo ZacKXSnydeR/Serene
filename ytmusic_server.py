@@ -624,6 +624,14 @@ if __name__ == "__main__":
     # Print the marker so the Tauri sidecar listener can extract it
     print(f"SERENE_PORT={port}", flush=True)
     
+    # Add filter to suppress noisy "Unsupported upgrade request" warnings from Vite HMR
+    import logging
+    class FilterUpgradeRequests(logging.Filter):
+        def filter(self, record):
+            return "Unsupported upgrade request" not in record.getMessage()
+            
+    logging.getLogger("uvicorn.error").addFilter(FilterUpgradeRequests())
+    
     # Run the server locally on the dynamically assigned port
     uvicorn.run(app, host="127.0.0.1", port=port)
 

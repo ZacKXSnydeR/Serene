@@ -231,29 +231,25 @@ def get_stream_url(videoId: str):
             info = ydl.extract_info(url, download=False)
             return {"url": info['url']}
     except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e).lower()
-        # If bot detection hits, or format is unavailable (which often implies a signature or PO token challenge), fallback
-        if "sign in to confirm" in error_msg or "bot" in error_msg or "requested format is not available" in error_msg:
-            cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")
-            
-            ydl_opts_auth = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-                'no_warnings': True,
-                'extract_flat': False,
-                'js_runtimes': {'node': {}}
-            }
-            if os.path.exists(cookie_file):
-                ydl_opts_auth['cookiefile'] = cookie_file
+        print(f"Anonymous extraction failed ({e}), falling back to cookies for 100% reliability...")
+        cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")
+        
+        ydl_opts_auth = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'js_runtimes': {'node': {}}
+        }
+        if os.path.exists(cookie_file):
+            ydl_opts_auth['cookiefile'] = cookie_file
 
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts_auth) as ydl:
-                    info = ydl.extract_info(url, download=False)
-                    return {"url": info['url']}
-            except Exception as auth_e:
-                raise HTTPException(status_code=500, detail=str(auth_e))
-        else:
-            raise HTTPException(status_code=500, detail=str(e))
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts_auth) as ydl:
+                info = ydl.extract_info(url, download=False)
+                return {"url": info['url']}
+        except Exception as auth_e:
+            raise HTTPException(status_code=500, detail=f"Both anonymous and cookie fallback failed: {auth_e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

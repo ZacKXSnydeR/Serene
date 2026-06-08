@@ -3,6 +3,7 @@ import { usePlayerStore } from '../../store/usePlayerStore';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { useStreamUrl, useAddHistory } from '../../api/queries';
 import { invoke } from '@tauri-apps/api/core';
+import { useUIStore } from '../../store/useUIStore';
 
 export const AudioProvider: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -150,9 +151,11 @@ export const AudioProvider: React.FC = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [currentTrack]);
 
+  const discordRpcEnabled = useUIStore((state) => state.discordRpcEnabled);
+
   // Discord Rich Presence Sync
   useEffect(() => {
-    if (isPlaying && currentTrack) {
+    if (isPlaying && currentTrack && discordRpcEnabled) {
       let displayAlbum = currentTrack.album;
       if (!displayAlbum || displayAlbum === "Unknown Album") {
         displayAlbum = currentTrack.title;
@@ -167,7 +170,7 @@ export const AudioProvider: React.FC = () => {
     } else {
       invoke('clear_discord_presence').catch(console.error);
     }
-  }, [isPlaying, currentTrack?.id]);
+  }, [isPlaying, currentTrack, discordRpcEnabled]);
 
   return (
     <audio

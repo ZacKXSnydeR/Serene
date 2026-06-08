@@ -7,6 +7,7 @@ interface UIState {
   isFullscreenOpen: boolean;
   isSearchActive: boolean;
   isTitlebarHovered: boolean;
+  discordRpcEnabled: boolean;
   
   // Actions
   setIsSidebarOpen: (isOpen: boolean) => void;
@@ -15,6 +16,7 @@ interface UIState {
   setIsFullscreenOpen: (isOpen: boolean) => void;
   setIsSearchActive: (isActive: boolean) => void;
   setIsTitlebarHovered: (isHovered: boolean) => void;
+  setDiscordRpcEnabled: (enabled: boolean) => void;
   toggleSidebarPin: () => void;
 }
 
@@ -25,6 +27,7 @@ export const useUIStore = create<UIState>((set) => ({
   isFullscreenOpen: false,
   isSearchActive: false,
   isTitlebarHovered: false,
+  discordRpcEnabled: localStorage.getItem('discord_rpc_enabled') !== 'false', // Default true
 
   setIsSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setIsSidebarPinned: (isPinned) => {
@@ -35,6 +38,10 @@ export const useUIStore = create<UIState>((set) => ({
   setIsFullscreenOpen: (isOpen) => set({ isFullscreenOpen: isOpen }),
   setIsSearchActive: (isActive) => set({ isSearchActive: isActive }),
   setIsTitlebarHovered: (isHovered) => set({ isTitlebarHovered: isHovered }),
+  setDiscordRpcEnabled: (enabled) => {
+    localStorage.setItem('discord_rpc_enabled', String(enabled));
+    set({ discordRpcEnabled: enabled });
+  },
   
   toggleSidebarPin: () => set((state) => {
     const newPinned = !state.isSidebarPinned;

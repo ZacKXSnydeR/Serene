@@ -9,6 +9,7 @@ import { LikedSongsPage } from './pages/LikedSongsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { SettingsPage } from './pages/SettingsPage';
 import { useLibraryStore } from './store/useLibraryStore';
 
 
@@ -32,6 +33,7 @@ export const AppRouter: React.FC = () => {
           <Route path="liked" element={<LikedSongsPage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="playlists" element={<PlaylistsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

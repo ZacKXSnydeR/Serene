@@ -1,6 +1,4 @@
 mod db;
-
-use serde_json::Value;
 use tauri::{Manager, Emitter};
 use tauri_plugin_shell::ShellExt;
 use std::sync::{Arc, Mutex};
@@ -29,7 +27,6 @@ async fn open_youtube_login(app: tauri::AppHandle, state: tauri::State<'_, Serve
         return Err("Server port not initialized yet".to_string());
     };
     
-    let data_dir = app.path().app_data_dir().unwrap().join("ytm_login_profile");
     
     let init_script = format!(r#"
         let checkInterval = setInterval(() => {{
@@ -84,44 +81,7 @@ async fn open_youtube_login(app: tauri::AppHandle, state: tauri::State<'_, Serve
     Ok(())
 }
 
-#[tauri::command]
-async fn admin_rpc(method: String, params: Option<Value>) -> Result<Value, String> {
-    let client = reqwest::Client::new();
-    let token = "cyrus-admin-123";
-    let url = "http://localhost:18789/api/v1/admin/rpc";
 
-    let mut body = serde_json::Map::new();
-    body.insert("method".to_string(), Value::String(method));
-    if let Some(p) = params {
-        body.insert("params".to_string(), p);
-    }
-
-    let response = client
-        .post(url)
-        .header("Authorization", format!("Bearer {}", token))
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let json_response: Value = response.json().await.map_err(|e| e.to_string())?;
-
-    if let Some(ok) = json_response.get("ok").and_then(|ok| ok.as_bool()) {
-        if ok {
-            if let Some(payload) = json_response.get("payload") {
-                return Ok(payload.clone());
-            }
-            return Ok(Value::Null);
-        } else {
-            if let Some(err_msg) = json_response.get("error").and_then(|e| e.get("message")).and_then(|m| m.as_str()) {
-                return Err(err_msg.to_string());
-            }
-            return Err("RPC call failed with unknown error".to_string());
-        }
-    }
-
-    Err("Invalid response format from gateway".to_string())
-}
 
 #[tauri::command]
 async fn fetch_web_data(url: String) -> Result<String, String> {
@@ -159,10 +119,9 @@ fn set_discord_presence(
     
     // Auto-reconnect or initialize if missing
     if client_opt.is_none() {
-        if let Ok(mut new_client) = DiscordIpcClient::new("1513607760955052102") {
-            if new_client.connect().is_ok() {
-                *client_opt = Some(new_client);
-            }
+        let mut new_client = DiscordIpcClient::new("1513607760955052102");
+        if new_client.connect().is_ok() {
+            *client_opt = Some(new_client);
         }
     }
 

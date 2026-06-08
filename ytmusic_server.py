@@ -191,23 +191,44 @@ def get_song_credits(videoId: str):
 
 @app.get("/stream/{videoId}")
 def get_stream_url(videoId: str):
-    ydl_opts = {
+    # First attempt: Fast path without cookies
+    ydl_opts_anon = {
         'format': 'bestaudio/best',
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
-        'js_runtimes': {'node': {}}
     }
 
-    cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")
-    if os.path.exists(cookie_file):
-        ydl_opts['cookiefile'] = cookie_file
+    url = f"https://www.youtube.com/watch?v={videoId}"
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # We fetch from generic YouTube for better reliability
-            info = ydl.extract_info(f"https://www.youtube.com/watch?v={videoId}", download=False)
+        with yt_dlp.YoutubeDL(ydl_opts_anon) as ydl:
+            info = ydl.extract_info(url, download=False)
             return {"url": info['url']}
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e).lower()
+        # If bot detection hits, or format is unavailable (which often implies a signature or PO token challenge), fallback
+        if "sign in to confirm" in error_msg or "bot" in error_msg or "requested format is not available" in error_msg:
+            cookie_file = os.path.join(os.path.expanduser("~"), ".serene_app", "cookies.txt")
+            
+            ydl_opts_auth = {
+                'format': 'bestaudio/best',
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': False,
+                'js_runtimes': {'node': {}}
+            }
+            if os.path.exists(cookie_file):
+                ydl_opts_auth['cookiefile'] = cookie_file
+
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts_auth) as ydl:
+                    info = ydl.extract_info(url, download=False)
+                    return {"url": info['url']}
+            except Exception as auth_e:
+                raise HTTPException(status_code=500, detail=str(auth_e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

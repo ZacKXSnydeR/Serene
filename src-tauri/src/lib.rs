@@ -134,7 +134,7 @@ fn set_discord_presence(
             .activity_type(activity::ActivityType::Listening)
             .timestamps(activity::Timestamps::new().start(start_time));
         
-        let mut assets = activity::Assets::new()
+        let assets = activity::Assets::new()
             .large_text(album.as_str())
             .large_image("serene_logo");
         

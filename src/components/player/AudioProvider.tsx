@@ -159,9 +159,10 @@ export const AudioProvider: React.FC = () => {
       }
 
       let poster = currentTrack.poster || null;
-      // Discord requires image URLs to have a valid image extension to render properly
-      if (poster && !poster.includes('.jpg') && !poster.includes('.png')) {
-        poster += '?.jpg';
+      // Discord's image crawler blocks direct YouTube Music CDN links, resulting in a ? icon.
+      // We route it through a public image caching proxy (weserv) to fix this.
+      if (poster) {
+        poster = `https://images.weserv.nl/?url=${encodeURIComponent(poster)}`;
       }
 
       invoke('set_discord_presence', {

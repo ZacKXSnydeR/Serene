@@ -158,19 +158,11 @@ export const AudioProvider: React.FC = () => {
         displayAlbum = currentTrack.title;
       }
 
-      let poster = currentTrack.poster || null;
-      // Discord's image crawler blocks direct YouTube Music CDN links, resulting in a ? icon.
-      // We route it through a public image caching proxy (weserv) to fix this.
-      if (poster) {
-        poster = `https://images.weserv.nl/?url=${encodeURIComponent(poster)}`;
-      }
-
       invoke('set_discord_presence', {
         title: currentTrack.title,
         artist: currentTrack.artist,
         album: displayAlbum,
-        elapsed: Math.floor(audioRef.current?.currentTime || 0),
-        posterUrl: poster
+        elapsed: Math.floor(audioRef.current?.currentTime || 0)
       }).catch(console.error);
     } else {
       invoke('clear_discord_presence').catch(console.error);

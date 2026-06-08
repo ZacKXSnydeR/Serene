@@ -112,8 +112,7 @@ fn set_discord_presence(
     title: String,
     artist: String,
     album: String,
-    elapsed: i64,
-    poster_url: Option<String>
+    elapsed: i64
 ) {
     let mut client_opt = state.0.lock().unwrap();
     
@@ -135,13 +134,8 @@ fn set_discord_presence(
             .timestamps(activity::Timestamps::new().start(start_time));
         
         let mut assets = activity::Assets::new()
-            .large_text(album.as_str());
-
-        if let Some(url) = &poster_url {
-            assets = assets.large_image(url.as_str());
-        } else {
-            assets = assets.large_image("serene_logo");
-        }
+            .large_text(album.as_str())
+            .large_image("serene_logo");
         
         // Small image for app icon (optional, we'll leave it empty to keep focus on album art)
         
